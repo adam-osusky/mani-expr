@@ -10,26 +10,29 @@
 #include <vector>
 
 enum NodeType {
-	Num, Var, Addition, Mult
+	Num, Var, Addition, Multiplication
 };
 
 template<typename T>
 class ExpressionNode;
 
 template<typename T>
-using ptr_node = std::unique_ptr<ExpressionNode<T>>;
+//using ptr_node = std::unique_ptr<ExpressionNode<T>>;
+using ptr_node = std::shared_ptr< ExpressionNode<T>>;
 
 template<typename T>
 class ExpressionNode {
 public:
-	explicit ExpressionNode(T val, NodeType n_type) : value_(val), n_type_(n_type), deriv_(0) {}
+	ExpressionNode(NodeType n_type, T val) : value_(val), n_type_(n_type), deriv_(0) {}
+	ExpressionNode(NodeType n_type, std::vector< ptr_node<T>> &&childs) : n_type_(n_type), children_(std::move(childs)), value_(0), deriv_(0) {}
+	
 	virtual ~ExpressionNode() = default;
 	
 	virtual T eval() = 0;
 	
 	virtual void differentiate() = 0;
 	
-	virtual void set_derivative(T d) = 0;
+//	virtual void set_derivative(T d) = 0;
 
 //	void simplify();
 protected:
@@ -43,15 +46,29 @@ protected:
 template<typename T>
 class Number : public ExpressionNode<T> {
 public:
-	explicit Number(T val, NodeType n_type) : ExpressionNode<T>(val, n_type) {}
+	explicit Number(T val) : ExpressionNode<T>(NodeType::Num, val) {}
 	
 	T eval() override {
-		return ExpressionNode<T>::value_;
+		return this->value_;
 	}
 	
 	void differentiate() override {}
 	
-	void set_derivative(T d) override {}
+//	void set_derivative(T d) override {}
+};
+
+template<typename T>
+class Add : public ExpressionNode<T> {
+public:
+//	Add(ptr_node<T> &&l, ptr_node<T> &&r) : ExpressionNode<T>(NodeType::Addition, {std::move(l), std::move(r)} ) {} //constructor for unique_ptr
+	Add(ptr_node<int> l, ptr_node<int> r) : ExpressionNode<T>(NodeType::Addition, {std::move(l), std::move(r)} ) {}
+	
+	T eval() override {
+		ExpressionNode<T>::value_ = this->children_[0]->eval() + this->children_[1]->eval();
+		return this->value_;
+	}
+	
+	void differentiate() override {}
 };
 
 //template<typename T>

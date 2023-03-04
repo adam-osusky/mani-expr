@@ -6,13 +6,14 @@ int main() {
 	using T = int;
 	
 	
-	auto x = Number<int>(69, NodeType::Num);
-	auto y = Number<int>(1, NodeType::Num);
+//	auto x = Number<T>(69);
+//	auto y = Number<T>(1);
+	auto x = std::make_shared< Number<T>>(69);
+	auto y = std::make_shared< Number<T>>(1);
+//	auto sum = Add<T>(x, y);
+	auto sum = Add<T>(x, y);
+	auto res = sum.eval();
 	
-	
-	
-//	auto x_ptr = ptr_node<T>(&x);
-
 //	auto x = std::make_unique<Number<T>>(69);
 //	auto y = std::make_unique<Number<T>>(1);
 //	T v = x->eval() + y->eval();
