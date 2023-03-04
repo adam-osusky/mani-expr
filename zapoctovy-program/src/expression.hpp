@@ -16,18 +16,26 @@ enum NodeType {
 template<typename T>
 class ExpressionNode;
 
-template<typename T>
+//template<typename T>
 //using ptr_node = std::unique_ptr<ExpressionNode<T>>;
-using ptr_node = std::shared_ptr<ExpressionNode<T>>;
+//using ptr_node = std::shared_ptr<ExpressionNode<T>>;
 
 template<typename T>
 class ExpressionNode {
 public:
-	ExpressionNode(NodeType n_type, T val) : value_(val), n_type_(n_type), deriv_(0) {}
+	using ptr_node = std::unique_ptr<ExpressionNode>;
 	
-	ExpressionNode(NodeType n_type, std::vector<ptr_node<T>> &&children) : n_type_(n_type),
-																		   children_(std::move(children)), value_(0),
-																		   deriv_(0) {}
+	ExpressionNode() = default;
+	
+	ExpressionNode(NodeType n_type, T val) : n_type_(n_type), value_(val) {}
+
+//	explicit ExpressionNode(NodeType n_type) : n_type_(n_type) {}
+	template<typename... Ts>
+	explicit ExpressionNode(NodeType n_type, Ts &&... args) : n_type_(n_type) {
+		(children_.push_back(std::forward<Ts>(args)), ...);
+	}
+
+//	ExpressionNode(NodeType n_type, std::vector<ptr_node> &&children) : n_type_(n_type) {}
 	
 	virtual ~ExpressionNode() = default;
 	
@@ -39,10 +47,10 @@ public:
 
 //	void simplify();
 //protected:
-	T value_;
+	T value_ = 0;
 	NodeType n_type_;
-	T deriv_;
-	std::vector<ptr_node<T>> children_;
+	T deriv_ = 0;
+	std::vector<ptr_node> children_ = {};
 };
 
 
@@ -56,15 +64,26 @@ public:
 	}
 	
 	void differentiate() override {}
+	
 };
+
 
 template<typename T>
 class AddNode : public ExpressionNode<T> {
 public:
-//	AddNode(ptr_node<T> &&l, ptr_node<T> &&r) : ExpressionNode<T>(NodeType::Addition, {std::move(l), std::move(r)} ) {} //constructor for unique_ptr
-	AddNode(ptr_node<T> l, ptr_node<T> r) : ExpressionNode<T>(NodeType::Addition,
-																  {std::move(l),
-																   std::move(r)}) {}
+	using ptr_node = typename ExpressionNode<T>::ptr_node;
+	
+	AddNode(ptr_node &&l, ptr_node &&r) : ExpressionNode<T>(NodeType::Addition, std::move(l),
+															std::move(r)) {} //constructor for unique_ptr
+
+//	AddNode(ptr_node &&l, ptr_node &&r) {
+//		static_assert(std::is_same_v<std::vector<ptr_node>,
+//				decltype(std::vector<ptr_node>({std::move(l), std::move(r)}))>);
+//	}
+
+//	AddNode(ptr_node<T> l, ptr_node<T> r) : ExpressionNode<T>(NodeType::Addition,
+//																  {std::move(l),
+//																   std::move(r)}) {}
 	
 	T eval() override {
 		this->value_ = this->children_[0]->eval() + this->children_[1]->eval();
@@ -80,8 +99,9 @@ public:
 template<typename T>
 class MultNode : public ExpressionNode<T> {
 public:
-	MultNode(ptr_node<T> l, ptr_node<T> r) : ExpressionNode<T>(NodeType::Multiplication,
-																   {std::move(l), std::move(r)}) {}
+	using ptr_node = typename ExpressionNode<T>::ptr_node;
+	
+	MultNode(ptr_node &&l, ptr_node &&r) : ExpressionNode<T>(NodeType::Multiplication, std::move(l), std::move(r)) {}
 	
 	T eval() override {
 		this->value_ = this->children_[0]->eval() * this->children_[1]->eval();
@@ -93,6 +113,9 @@ public:
 		this->children_[1]->deriv_ = this->deriv_ * this->children_[0]->value_;
 	}
 };
+
+//template<typename T>
+//ExpressionNode<T> operator+()
 
 //template<typename T>
 //class Add : public ExpressionNode<T> {
