@@ -62,7 +62,7 @@ template<typename T>
 class AddNode : public ExpressionNode<T> {
 public:
 //	AddNode(ptr_node<T> &&l, ptr_node<T> &&r) : ExpressionNode<T>(NodeType::Addition, {std::move(l), std::move(r)} ) {} //constructor for unique_ptr
-	AddNode(ptr_node<int> l, ptr_node<int> r) : ExpressionNode<T>(NodeType::Addition,
+	AddNode(ptr_node<T> l, ptr_node<T> r) : ExpressionNode<T>(NodeType::Addition,
 																  {std::move(l),
 																   std::move(r)}) {}
 	
@@ -80,7 +80,7 @@ public:
 template<typename T>
 class MultNode : public ExpressionNode<T> {
 public:
-	MultNode(ptr_node<int> l, ptr_node<int> r) : ExpressionNode<T>(NodeType::Multiplication,
+	MultNode(ptr_node<T> l, ptr_node<T> r) : ExpressionNode<T>(NodeType::Multiplication,
 																   {std::move(l), std::move(r)}) {}
 	
 	T eval() override {
