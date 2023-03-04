@@ -6,19 +6,19 @@ int main() {
 	using T = int;
 	
 	
-//	auto x = Number<T>(69);
-//	auto y = Number<T>(1);
-	auto x = std::make_shared< Number<T>>(69);
+	auto x = std::make_shared< Number<T>>(5);
 	auto y = std::make_shared< Number<T>>(1);
-//	auto sum = Add<T>(x, y);
-	auto sum = Add<T>(x, y);
-	auto res = sum.eval();
+	auto sum = std::make_shared< AddNode<T>>(x, y);
 	
-//	auto x = std::make_unique<Number<T>>(69);
-//	auto y = std::make_unique<Number<T>>(1);
-//	T v = x->eval() + y->eval();
-//	auto expr2 = Add<int>(v, std::move(x), std::move(y) );
-//	auto z = Add<int>(70);
-
+	auto z = std::make_shared< Number<T>>(10);
+	auto R = MultNode<T>(sum, z);
+//	auto res = sum2.eval();
+	R.eval();
+	R.deriv_ = 1;
+	R.differentiate();
+	sum->differentiate();
+	
+	// (x + y) * z
+	
 	return 0;
 }
