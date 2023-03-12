@@ -31,8 +31,6 @@ public:
 		(children_.push_back(std::forward<Ts>(args)), ...);
 	}
 
-//	ExpressionNode(NodeType n_type, std::vector<ptr_node> &&children) : n_type_(n_type) {}
-	
 	virtual ~ExpressionNode() = default;
 	
 	virtual T eval() = 0;
@@ -59,7 +57,7 @@ struct Var {
 template<typename T>
 class Number : public ExpressionNode<T> {
 public:
-	explicit Number(Var<T> &v_r) : ExpressionNode<T>(NodeType::Num, v_r.value), val_ref(v_r) {}
+	explicit Number(Var<T> &v_r) : ExpressionNode<T>(NodeType::Num, v_r.value), val_ref(v_r) {} //why const v_r dont work?
 	
 	T eval() override {
 		this->value_ = val_ref.value;
@@ -109,8 +107,13 @@ public:
 	}
 };
 
-//template<typename T>
-//ExpressionNode<T> operator+()
+template<typename T>
+std::unique_ptr< ExpressionNode<T>> operator+(Var<T> &l, Var<T> &r) {
+	auto l_p = std::make_unique< Number<T>>(l);
+	auto r_p = std::make_unique< Number<T>>(r);
+	auto res_p = std::make_unique< AddNode<T>>(std::move(l_p), std::move(r_p));
+	return res_p;
+}
 
 
 #endif //ZAPOCTOVY_PROGRAM_EXPRESSION_HPP
