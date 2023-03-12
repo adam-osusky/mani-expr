@@ -57,7 +57,7 @@ struct Var {
 template<typename T>
 class Number : public ExpressionNode<T> {
 public:
-	explicit Number(Var<T> &v_r) : ExpressionNode<T>(NodeType::Num, v_r.value), val_ref(v_r) {} //why const v_r dont work?
+	explicit Number(Var<T> &v_r) : ExpressionNode<T>(NodeType::Num, v_r.value), val_ref(v_r) {} //why const v_r doesnt work?
 	
 	T eval() override {
 		this->value_ = val_ref.value;
@@ -107,6 +107,7 @@ public:
 	}
 };
 
+//+ operator
 template<typename T>
 std::unique_ptr< ExpressionNode<T>> operator+(Var<T> &l, Var<T> &r) {
 	auto l_p = std::make_unique< Number<T>>(l);
@@ -115,5 +116,41 @@ std::unique_ptr< ExpressionNode<T>> operator+(Var<T> &l, Var<T> &r) {
 	return res_p;
 }
 
+template<typename T>
+std::unique_ptr< ExpressionNode<T>> operator+(std::unique_ptr< ExpressionNode<T>> &&l, Var<T> &r) {
+	auto r_p = std::make_unique< Number<T>>(r);
+	auto res_p = std::make_unique< AddNode<T>>(std::move(l), std::move(r_p));
+	return res_p;
+}
+
+template<typename T>
+std::unique_ptr< ExpressionNode<T>> operator+(Var<T> &l, std::unique_ptr< ExpressionNode<T>> &&r) {
+	auto l_p = std::make_unique< Number<T>>(l);
+	auto res_p = std::make_unique< AddNode<T>>(std::move(l_p), std::move(r));
+	return res_p;
+}
+
+//* operator
+template<typename T>
+std::unique_ptr< ExpressionNode<T>> operator*(Var<T> &l, Var<T> &r) {
+	auto l_p = std::make_unique< Number<T>>(l);
+	auto r_p = std::make_unique< Number<T>>(r);
+	auto res_p = std::make_unique< MultNode<T>>(std::move(l_p), std::move(r_p));
+	return res_p;
+}
+
+template<typename T>
+std::unique_ptr< ExpressionNode<T>> operator*(std::unique_ptr< ExpressionNode<T>> &&l, Var<T> &r) {
+	auto r_p = std::make_unique< Number<T>>(r);
+	auto res_p = std::make_unique< MultNode<T>>(std::move(l), std::move(r_p));
+	return res_p;
+}
+
+template<typename T>
+std::unique_ptr< ExpressionNode<T>> operator*(Var<T> &l, std::unique_ptr< ExpressionNode<T>> &&r) {
+	auto l_p = std::make_unique< Number<T>>(l);
+	auto res_p = std::make_unique< MultNode<T>>(std::move(l_p), std::move(r));
+	return res_p;
+}
 
 #endif //ZAPOCTOVY_PROGRAM_EXPRESSION_HPP
