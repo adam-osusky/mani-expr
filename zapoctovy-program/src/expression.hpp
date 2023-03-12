@@ -10,15 +10,11 @@
 #include <vector>
 
 enum NodeType {
-	Num, Var, Addition, Multiplication
+	Num, Addition, Multiplication
 };
 
 template<typename T>
 class ExpressionNode;
-
-//template<typename T>
-//using ptr_node = std::unique_ptr<ExpressionNode<T>>;
-//using ptr_node = std::shared_ptr<ExpressionNode<T>>;
 
 template<typename T>
 class ExpressionNode {
@@ -53,18 +49,26 @@ public:
 	std::vector<ptr_node> children_ = {};
 };
 
+template<typename T>
+struct Var {
+	explicit Var(T v) : value(v) {};
+	
+	T value;
+};
 
 template<typename T>
 class Number : public ExpressionNode<T> {
 public:
-	explicit Number(T val) : ExpressionNode<T>(NodeType::Num, val) {}
+	explicit Number(Var<T> &v_r) : ExpressionNode<T>(NodeType::Num, v_r.value), val_ref(v_r) {}
 	
 	T eval() override {
+		this->value_ = val_ref.value;
 		return this->value_;
 	}
 	
 	void differentiate() override {}
 	
+	Var<T> &val_ref;
 };
 
 
@@ -75,15 +79,6 @@ public:
 	
 	AddNode(ptr_node &&l, ptr_node &&r) : ExpressionNode<T>(NodeType::Addition, std::move(l),
 															std::move(r)) {} //constructor for unique_ptr
-
-//	AddNode(ptr_node &&l, ptr_node &&r) {
-//		static_assert(std::is_same_v<std::vector<ptr_node>,
-//				decltype(std::vector<ptr_node>({std::move(l), std::move(r)}))>);
-//	}
-
-//	AddNode(ptr_node<T> l, ptr_node<T> r) : ExpressionNode<T>(NodeType::Addition,
-//																  {std::move(l),
-//																   std::move(r)}) {}
 	
 	T eval() override {
 		this->value_ = this->children_[0]->eval() + this->children_[1]->eval();
@@ -117,30 +112,5 @@ public:
 //template<typename T>
 //ExpressionNode<T> operator+()
 
-//template<typename T>
-//class Add : public ExpressionNode<T> {
-//public:
-//	Add(T val, ptr_node<T> &&l, ptr_node<T> &&r) : n_type_(NodeType::Addition), value_(val),
-//												   left_(std::move(l)), right_(std::move(r)) { deriv_ = 0; }
-//
-//	T eval() override {
-//		value_ = left_->eval() + right_->eval();
-//		return value_;
-//	}
-//
-//	void differentiate() override {
-//		left_->set_derivative(deriv_);
-//		right_->set_derivative(deriv_);
-//	}
-//
-//	void set_derivative(T d) override { deriv_ = d; }
-//
-//private:
-//	T value_;
-//	T deriv_;
-//	NodeType n_type_;
-//	std::unique_ptr<ExpressionNode<T>> left_;
-//	std::unique_ptr<ExpressionNode<T>> right_;
-//};
 
 #endif //ZAPOCTOVY_PROGRAM_EXPRESSION_HPP
