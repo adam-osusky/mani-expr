@@ -52,6 +52,7 @@ struct Var {
 	explicit Var(T v) : value(v) {};
 	
 	T value;
+	T derivative = 0;
 };
 
 template<typename T>
@@ -64,7 +65,9 @@ public:
 		return this->value_;
 	}
 	
-	void differentiate() override {}
+	void differentiate() override {
+		val_ref.derivative += this->deriv_;
+	}
 	
 	Var<T> &val_ref;
 };
@@ -84,9 +87,11 @@ public:
 	}
 	
 	void differentiate() override {
-		this->children_[0]->deriv_ = this->deriv_;
-		this->children_[1]->deriv_ = this->deriv_;
+		this->children_[0]->deriv_ += this->deriv_;
+		this->children_[1]->deriv_ += this->deriv_;
 	}
+private:
+	T sub = 1;
 };
 
 template<typename T>
@@ -102,10 +107,11 @@ public:
 	}
 	
 	void differentiate() override {
-		this->children_[0]->deriv_ = this->deriv_ * this->children_[1]->value_;
-		this->children_[1]->deriv_ = this->deriv_ * this->children_[0]->value_;
+		this->children_[0]->deriv_ += this->deriv_ * this->children_[1]->value_;
+		this->children_[1]->deriv_ += this->deriv_ * this->children_[0]->value_;
 	}
 };
+
 
 //+ operator
 template<typename T>
@@ -130,6 +136,13 @@ std::unique_ptr< ExpressionNode<T>> operator+(Var<T> &l, std::unique_ptr< Expres
 	return res_p;
 }
 
+template<typename T>
+std::unique_ptr< ExpressionNode<T>> operator+(std::unique_ptr< ExpressionNode<T>> &&l, std::unique_ptr< ExpressionNode<T>> &&r) {
+	auto res_p = std::make_unique< AddNode<T>>(std::move(l), std::move(r));
+	return res_p;
+}
+
+
 //* operator
 template<typename T>
 std::unique_ptr< ExpressionNode<T>> operator*(Var<T> &l, Var<T> &r) {
@@ -152,5 +165,21 @@ std::unique_ptr< ExpressionNode<T>> operator*(Var<T> &l, std::unique_ptr< Expres
 	auto res_p = std::make_unique< MultNode<T>>(std::move(l_p), std::move(r));
 	return res_p;
 }
+
+template<typename T>
+std::unique_ptr< ExpressionNode<T>> operator*(std::unique_ptr< ExpressionNode<T>> &&l, std::unique_ptr< ExpressionNode<T>> &&r) {
+	auto res_p = std::make_unique< MultNode<T>>(std::move(l), std::move(r));
+	return res_p;
+}
+
+
+//// substraction
+//template<typename T>
+//std::unique_ptr< ExpressionNode<T>> operator-(Var<T> &l, Var<T> &r) {
+//	auto l_p = std::make_unique< Number<T>>(l);
+//	auto r_p = std::make_unique< Number<T>>(r);
+//	auto res_p = std::make_unique< MultNode<T>>(std::move(l_p), std::move(r_p));
+//	return res_p;
+//}
 
 #endif //ZAPOCTOVY_PROGRAM_EXPRESSION_HPP
