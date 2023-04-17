@@ -10,7 +10,7 @@
 #include <vector>
 
 enum NodeType {
-	Num, Addition, Multiplication
+	Num, Addition, Multiplication, Denominator
 };
 
 template<typename T>
@@ -23,7 +23,7 @@ public:
 	
 	ExpressionNode() = default;
 	
-	ExpressionNode(NodeType n_type, T val) : n_type_(n_type), value_(val) {}
+	ExpressionNode(NodeType n_type, T val) : n_type_(n_type), value_(val) {} // not collision with variadic temp??
 
 //	explicit ExpressionNode(NodeType n_type) : n_type_(n_type) {}
 	template<typename... Ts>
@@ -117,6 +117,27 @@ public:
 private:
 	bool is_division_;
 	T one = 1;
+};
+
+template<typename T>
+class DenominatorNode : public ExpressionNode<T> {
+public:
+	using ptr_node = typename ExpressionNode<T>::ptr_node;
+	
+	DenominatorNode(ptr_node &&child) : ExpressionNode<T>(NodeType::Denominator, std::move(child)) {}
+	
+	T eval() override {
+		// TODO
+//		this->value_ =
+		return this->value_;
+	}
+	
+	void differentiate() override {
+		// TODO
+	}
+
+private:
+	T sub_ = 1; // DELETE?
 };
 
 
