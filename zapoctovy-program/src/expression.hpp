@@ -79,9 +79,9 @@ class AddNode : public ExpressionNode<T> {
 public:
 	using ptr_node = typename ExpressionNode<T>::ptr_node;
 	
-	AddNode(ptr_node &&l, ptr_node &&r, bool is_substract = false) : ExpressionNode<T>(NodeType::Addition, std::move(l),
+	AddNode(ptr_node &&l, ptr_node &&r, bool is_subtract = false) : ExpressionNode<T>(NodeType::Addition, std::move(l),
 																					   std::move(r)) {
-		if (is_substract) sub_ = -1;
+		if (is_subtract) sub_ = -1;
 	}
 	
 	T eval() override {
@@ -114,30 +114,24 @@ public:
 		this->children_[0]->deriv_ += this->deriv_ * this->children_[1]->value_;
 		this->children_[1]->deriv_ += this->deriv_ * this->children_[0]->value_;
 	}
-private:
-	bool is_division_;
-	T one = 1;
 };
 
+// 1/f
 template<typename T>
 class DenominatorNode : public ExpressionNode<T> {
 public:
 	using ptr_node = typename ExpressionNode<T>::ptr_node;
 	
-	DenominatorNode(ptr_node &&child) : ExpressionNode<T>(NodeType::Denominator, std::move(child)) {}
+	explicit DenominatorNode(ptr_node &&child) : ExpressionNode<T>(NodeType::Denominator, std::move(child)) {}
 	
 	T eval() override {
-		// TODO
-//		this->value_ =
+		this->value_ = T(1) / this->children_[0]->eval();
 		return this->value_;
 	}
 	
 	void differentiate() override {
-		// TODO
+		this->children_[0]->deriv_ += this->deriv_ * T(-1) / (this->value_ * this->value_);
 	}
-
-private:
-	T sub_ = 1; // DELETE?
 };
 
 
@@ -203,7 +197,7 @@ operator*(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode
 }
 
 
-// substraction
+// subtraction
 template<typename T>
 std::unique_ptr<ExpressionNode<T>> operator-(Var<T> &l, Var<T> &r) {
 	auto l_p = std::make_unique<Number<T>>(l);
@@ -231,5 +225,44 @@ operator-(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode
 	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
 	return res_p;
 }
+
+// division
+template<typename T>
+std::unique_ptr<ExpressionNode<T>> operator/(Var<T> &l, Var<T> &r) {
+	auto l_p = std::make_unique<Number<T>>(l);
+	auto r_p = std::make_unique<Number<T>>(r);
+	
+	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r_p));
+	auto res_p = std::make_unique<MultNode<T>>(std::move(l_p), std::move(denominator));
+	return res_p;
+}
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>> operator/(std::unique_ptr<ExpressionNode<T>> &&l, Var<T> &r) {
+	auto r_p = std::make_unique<Number<T>>(r);
+	
+	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r_p));
+	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(denominator));
+	return res_p;
+}
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>> operator/(Var<T> &l, std::unique_ptr<ExpressionNode<T>> &&r) {
+	auto l_p = std::make_unique<Number<T>>(l);
+	
+	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r));
+	auto res_p = std::make_unique<MultNode<T>>(std::move(l_p), std::move(denominator));
+	return res_p;
+}
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>
+operator/(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode<T>> &&r) {
+	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r));
+	
+	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(denominator));
+	return res_p;
+}
+
 
 #endif //ZAPOCTOVY_PROGRAM_EXPRESSION_HPP
