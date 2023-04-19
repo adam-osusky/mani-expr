@@ -130,7 +130,7 @@ public:
 	}
 	
 	void differentiate() override {
-		this->children_[0]->deriv_ += this->deriv_ * T(-1) / (this->value_ * this->value_);
+		this->children_[0]->deriv_ += this->deriv_ * T(-1) / (this->children_[0]->value_ * this->children_[0]->value_);
 	}
 };
 
