@@ -2,8 +2,8 @@
 // Created by adas on 2/19/23.
 //
 
-#ifndef ZAPOCTOVY_PROGRAM_EXPRESSION_HPP
-#define ZAPOCTOVY_PROGRAM_EXPRESSION_HPP
+#ifndef ZAPOCTOVY_PROGRAM_EXPRESSIONNODE_HPP
+#define ZAPOCTOVY_PROGRAM_EXPRESSIONNODE_HPP
 
 
 #include <memory>
@@ -265,4 +265,4 @@ operator/(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode
 }
 
 
-#endif //ZAPOCTOVY_PROGRAM_EXPRESSION_HPP
+#endif //ZAPOCTOVY_PROGRAM_EXPRESSIONNODE_HPP
