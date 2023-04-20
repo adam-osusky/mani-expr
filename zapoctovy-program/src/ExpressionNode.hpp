@@ -50,6 +50,7 @@ public:
 template<typename T>
 struct Var {
 	explicit Var(T v) : value(v) {};
+	Var() = default;
 	
 	T value;
 	T derivative = 0;
