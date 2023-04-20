@@ -11,14 +11,14 @@
 template<typename T>
 class Expression {
 public:
-	
 	Var<T> & create_variable(T value, const std::string & name) {
 		variables.insert_or_assign(name, Var<T>(value));
 		return variables[name];
 	}
 	
 	std::map< std::string, Var<T>> variables;
-//	ExpressionNode<T> root;
+	std::unique_ptr<ExpressionNode<T>> root;
+
 private:
 };
 
