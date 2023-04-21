@@ -50,11 +50,13 @@ public:
 template<typename T>
 struct Var {
 	explicit Var(T v) : value(v) {};
+	explicit Var(T v, const std::string & var_name) : value(v), name(var_name) {};
 	
 	Var() = default;
 	
 	T value;
 	T derivative = 0;
+	std::string name;
 };
 
 template<typename T>
@@ -95,7 +97,7 @@ public:
 		this->children_[1]->deriv_ += (sub_ * this->deriv_);
 	}
 
-private:
+//private:
 	T sub_ = 1;
 };
 

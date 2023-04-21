@@ -20,5 +20,7 @@ int main() {
 	std::cout << "derivation of y : " << expr["y"].derivative << std::endl;
 	std::cout << "derivation of z : " << expr["z"].derivative << std::endl;
 	
+	std::cout << expr.to_string() << std::endl;
+	
 	return 0;
 }
