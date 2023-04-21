@@ -26,6 +26,13 @@ public:
 		std::vector< ExpressionNode<T>*> topo;
 		
 		build_topo(root.get(), visited, topo);
+		
+		root->eval();
+		root->deriv_ = T(1);
+		
+		for (auto it = topo.rbegin(); it != topo.rend() ; ++it) {
+			(*it)->differentiate();
+		}
 	}
 	
 	std::map< std::string, Var<T>, std::less<>> variables;
