@@ -11,7 +11,8 @@ int main() {
 	auto & y = expr.create_variable(3.0, "y");
 	auto & z = expr.create_variable(10.0, "z");
 	
-	auto r = (x*x) / (z+x);
+//	auto r = (x*x) / (z+x);
+	auto r = (expr["x"]*expr["x"]) / (z+expr["x"]);
 	
 	r->eval();
 	r->deriv_ = 1.0;
@@ -29,6 +30,7 @@ int main() {
 	r->children_[1]->children_[0]->children_[1]->differentiate();
 	
 	expr.root = std::move(r);
+	expr.differentiate();
 	
 	return 0;
 }

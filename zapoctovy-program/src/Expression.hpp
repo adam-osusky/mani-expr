@@ -6,6 +6,7 @@
 #define ZAPOCTOVY_PROGRAM_EXPRESSION_HPP
 
 #include <map>
+#include <set>
 #include "ExpressionNode.hpp"
 
 template<typename T>
@@ -16,10 +17,33 @@ public:
 		return variables[name];
 	}
 	
-	std::map< std::string, Var<T>> variables;
+	auto operator[](const std::string x) -> Var<T> & {
+		return variables[x];
+	}
+	
+	void differentiate() {
+		std::set< ExpressionNode<T>*> visited;
+		std::vector< ExpressionNode<T>*> topo;
+		
+		build_topo(root.get(), visited, topo);
+	}
+	
+	std::map< std::string, Var<T>, std::less<>> variables;
 	std::unique_ptr<ExpressionNode<T>> root;
 
 private:
+	void build_topo(ExpressionNode<T> * node,
+					std::set<ExpressionNode<T> *> &visited,
+					std::vector<ExpressionNode<T> *> &topo) {
+		if (!visited.contains(node)) {
+			visited.insert(node);
+			for (auto && child : node->children_) {
+//				auto * child_ptr = child.get();
+				build_topo(child.get(), visited, topo);
+			}
+		}
+		topo.push_back(node);
+	}
 };
 
 

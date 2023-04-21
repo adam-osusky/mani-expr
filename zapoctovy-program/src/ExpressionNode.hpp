@@ -50,6 +50,7 @@ public:
 template<typename T>
 struct Var {
 	explicit Var(T v) : value(v) {};
+	
 	Var() = default;
 	
 	T value;
@@ -59,8 +60,7 @@ struct Var {
 template<typename T>
 class Number : public ExpressionNode<T> {
 public:
-	explicit Number(Var<T> &v_r) : ExpressionNode<T>(NodeType::Num, v_r.value),
-								   val_ref(v_r) {} //why const v_r doesnt work?
+	explicit Number(Var<T> &v_r) : ExpressionNode<T>(NodeType::Num, v_r.value), val_ref(v_r) {}
 	
 	T eval() override {
 		this->value_ = val_ref.value;
@@ -81,7 +81,7 @@ public:
 	using ptr_node = typename ExpressionNode<T>::ptr_node;
 	
 	AddNode(ptr_node &&l, ptr_node &&r, bool is_subtract = false) : ExpressionNode<T>(NodeType::Addition, std::move(l),
-																					   std::move(r)) {
+																					  std::move(r)) {
 		if (is_subtract) sub_ = -1;
 	}
 	
@@ -206,6 +206,7 @@ std::unique_ptr<ExpressionNode<T>> operator-(Var<T> &l, Var<T> &r) {
 	auto res_p = std::make_unique<AddNode<T>>(std::move(l_p), std::move(r_p), true);
 	return res_p;
 }
+
 template<typename T>
 std::unique_ptr<ExpressionNode<T>> operator-(std::unique_ptr<ExpressionNode<T>> &&l, Var<T> &r) {
 	auto r_p = std::make_unique<Number<T>>(r);
