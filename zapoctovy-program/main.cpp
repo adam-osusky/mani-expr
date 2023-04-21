@@ -2,7 +2,6 @@
 #include "src/Expression.hpp"
 
 int main() {
-	std::cout << "Hello, World!" << std::endl;
 	using T = double;
 	
 	auto expr = Expression<T>();
@@ -11,27 +10,15 @@ int main() {
 	auto & y = expr.create_variable(3.0, "y");
 	auto & z = expr.create_variable(10.0, "z");
 	
-//	auto r = (x*x) / (z+x);
-	auto r = (expr["x"]*expr["x"]) / (expr["z"]+expr["x"]);
+	auto r = (expr["x"]*expr["x"]) / (expr["z"]-expr["x"]);
 //	auto r = expr["z"]+expr["x"];
-	
-//	r->eval();
-//	r->deriv_ = 1.0;
-//	r->differentiate();
-//
-//	r->children_[0]->differentiate();
-//	r->children_[1]->differentiate();
-//
-//	r->children_[0]->children_[0]->differentiate();
-//	r->children_[0]->children_[1]->differentiate();
-//
-//	r->children_[1]->children_[0]->differentiate(); // 1/n
-//
-//	r->children_[1]->children_[0]->children_[0]->differentiate();
-//	r->children_[1]->children_[0]->children_[1]->differentiate();
 	
 	expr.root = std::move(r);
 	expr.differentiate();
+	
+	std::cout << "derivation of x : " << expr["x"].derivative << std::endl;
+	std::cout << "derivation of y : " << expr["y"].derivative << std::endl;
+	std::cout << "derivation of z : " << expr["z"].derivative << std::endl;
 	
 	return 0;
 }
