@@ -12,6 +12,7 @@ int main() {
 	
 	auto r = (expr["x"]*expr["x"]) / (expr["z"]-expr["x"]);
 //	auto r = expr["z"]+expr["x"];
+//	auto r = expr["x"] + expr["x"];
 	
 	expr.root = std::move(r);
 	expr.differentiate();
