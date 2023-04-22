@@ -112,6 +112,8 @@ void Expression<T>::traverse_for_string(ExpressionNode<T> * node, std::stringstr
 			traverse_for_string(node->children_[0].get(), ss);
 			ss << ")";
 			break;
+		case NodeType::Const:
+			ss << node->value_;
 		default:
 			break;
 	}
