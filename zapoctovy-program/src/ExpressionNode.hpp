@@ -10,7 +10,7 @@
 #include <vector>
 
 enum NodeType {
-	Num, Addition, Multiplication, Denominator
+	Num, Addition, Multiplication, Denominator, Const
 };
 
 template<typename T>
@@ -36,7 +36,6 @@ public:
 	virtual T eval() = 0;
 	
 	virtual void differentiate() = 0;
-
 //	virtual void set_derivative(T d) = 0;
 
 //	void simplify();
@@ -76,6 +75,18 @@ public:
 	}
 	
 	Var<T> &val_ref;
+};
+
+template<typename T>
+class ConstantNode : public ExpressionNode<T> {
+public:
+	explicit ConstantNode(T v) : ExpressionNode<T>(NodeType::Const, v) {}
+	
+	T eval() override {
+		return this->value_;
+	}
+	
+	void differentiate() override {}
 };
 
 
@@ -155,11 +166,25 @@ std::unique_ptr<ExpressionNode<T>> operator+(Var<T> &l, Var<T> &r) {
 
 template<typename T>
 std::unique_ptr<ExpressionNode<T>>
-operator+(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode<T>> &&r) {
+operator+(std::unique_ptr<ExpressionNode<T>> &&l, T value) {
+	auto r = std::make_unique< ConstantNode<T>>(value);
+	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r));
+	return res_p;
+}
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>
+operator+(T value, std::unique_ptr<ExpressionNode<T>> &&r) {
+	auto l = std::make_unique< ConstantNode<T>>(value);
 	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r));
 	return res_p;
 }
 
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>
+operator+(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode<T>> &&r) {
+	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r));
+	return res_p;
+}
 
 //* operator
 template<typename T>
@@ -167,6 +192,21 @@ std::unique_ptr<ExpressionNode<T>> operator*(Var<T> &l, Var<T> &r) {
 	auto l_p = std::make_unique<Number<T>>(l);
 	auto r_p = std::make_unique<Number<T>>(r);
 	auto res_p = std::make_unique<MultNode<T>>(std::move(l_p), std::move(r_p));
+	return res_p;
+}
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>
+operator*(std::unique_ptr<ExpressionNode<T>> &&l, T value) {
+	auto r = std::make_unique< ConstantNode<T>>(value);
+	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(r));
+	return res_p;
+}
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>
+operator*(T value, std::unique_ptr<ExpressionNode<T>> &&r) {
+	auto l = std::make_unique< ConstantNode<T>>(value);
+	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(r));
 	return res_p;
 }
 
@@ -189,6 +229,21 @@ std::unique_ptr<ExpressionNode<T>> operator-(Var<T> &l, Var<T> &r) {
 
 template<typename T>
 std::unique_ptr<ExpressionNode<T>>
+operator-(std::unique_ptr<ExpressionNode<T>> &&l, T value) {
+	auto r = std::make_unique< ConstantNode<T>>(value);
+	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
+	return res_p;
+}
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>
+operator-(T value, std::unique_ptr<ExpressionNode<T>> &&r) {
+	auto l = std::make_unique< ConstantNode<T>>(value);
+	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
+	return res_p;
+}
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>
 operator-(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode<T>> &&r) {
 	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
 	return res_p;
@@ -202,6 +257,26 @@ std::unique_ptr<ExpressionNode<T>> operator/(Var<T> &l, Var<T> &r) {
 	
 	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r_p));
 	auto res_p = std::make_unique<MultNode<T>>(std::move(l_p), std::move(denominator));
+	return res_p;
+}
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>
+operator/(std::unique_ptr<ExpressionNode<T>> &&l, T value) {
+	auto r = std::make_unique< ConstantNode<T>>(value);
+	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r));
+	
+	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(denominator));
+	return res_p;
+}
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>
+operator/(T value, std::unique_ptr<ExpressionNode<T>> &&r) {
+	auto l = std::make_unique<ConstantNode<T>>(value);
+	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r));
+	
+	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(denominator));
 	return res_p;
 }
 
