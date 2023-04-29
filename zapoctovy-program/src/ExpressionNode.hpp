@@ -54,14 +54,15 @@ class Number;
 
 template<typename T>
 struct Var {
+	using is_var = void;
 	explicit Var(T v) : value(v) {};
 	explicit Var(T v, const std::string & var_name) : value(v), name(var_name) {};
 	
 	Var() = default;
 	
-	operator std::unique_ptr< ExpressionNode<T>>() {
-		return std::make_unique<Number<T>>(*this);
-	};
+//	operator std::unique_ptr< ExpressionNode<T>>() {
+//		return std::make_unique<Number<T>>(*this);
+//	};
 	
 	T value;
 	T derivative = 0;
@@ -113,7 +114,7 @@ public:
 	
 	AddNode(ptr_node &&l, ptr_node &&r, bool is_subtract = false) : ExpressionNode<T>(NodeType::Addition, std::move(l),
 																					  std::move(r)) {
-		if (is_subtract) sub_ = -1;
+		if (is_subtract) sub_ = (-1);
 	}
 	
 	T eval() override {
@@ -209,8 +210,16 @@ concept is_convertible_to_node = requires(T t) {
 	{convert_to_node(t)} -> std::same_as<std::unique_ptr<ExpressionNode<V>>>;
 };
 
+template<typename T>
+concept not_primitive_impl = requires { typename std::remove_cvref_t<T>::is_var; } or
+						requires { typename std::remove_cvref_t<T>::ptr_node; };
+
+template<typename T>
+concept not_primitive = not_primitive_impl<T> or not_primitive_impl<typename std::remove_cvref_t<T>::element_type>;
+
 //+ operator
-auto operator+(auto && l, auto && r) -> decltype(convert_to_node(std::forward<decltype(l)>(l))) {
+auto operator+(auto && l, auto && r) -> decltype(convert_to_node(std::forward<decltype(l)>(l)))
+requires not_primitive<decltype(l)> or not_primitive<decltype(r)>{
 	using expr_node_t = decltype(convert_to_node(std::forward<decltype(l)>(l)))::element_type;
 	using T = expr_node_t::value_t;
 	auto l_p = convert_to_node(std::forward<decltype(l)>(l));
@@ -220,7 +229,8 @@ auto operator+(auto && l, auto && r) -> decltype(convert_to_node(std::forward<de
 }
 
 //* operator
-auto operator*(auto && l, auto && r) -> decltype(convert_to_node(std::forward<decltype(l)>(l))) {
+auto operator*(auto && l, auto && r) -> decltype(convert_to_node(std::forward<decltype(l)>(l)))
+requires not_primitive<decltype(l)> or not_primitive<decltype(r)>{
 	using expr_node_t = decltype(convert_to_node(std::forward<decltype(l)>(l)))::element_type;
 	using T = expr_node_t::value_t;
 	auto l_p = convert_to_node(std::forward<decltype(l)>(l));
@@ -230,83 +240,25 @@ auto operator*(auto && l, auto && r) -> decltype(convert_to_node(std::forward<de
 }
 
 // subtraction
-//auto operator-(auto && l, auto && r) -> decltype(convert_to_node(std::forward<decltype(l)>(l))) {
-//	using expr_node_t = decltype(convert_to_node(std::forward<decltype(l)>(l)))::element_type;
-//	using T = expr_node_t::value_t;
-//	auto l_p = convert_to_node(std::forward<decltype(l)>(l));
-//	auto r_p = convert_to_node(std::forward<decltype(r)>(r));
-//	auto res_p = std::make_unique<AddNode<T>>(std::move(l_p), std::move(r_p), true);
-//	return res_p;
-//}
-//template<typename T>
-//std::unique_ptr<ExpressionNode<T>> operator-(Var<T> &l, Var<T> &r) {
-//	auto l_p = std::make_unique<Number<T>>(l);
-//	auto r_p = std::make_unique<Number<T>>(r);
-//	auto res_p = std::make_unique<AddNode<T>>(std::move(l_p), std::move(r_p), true);
-//	return res_p;
-//}
-//
-//template<typename T>
-//std::unique_ptr<ExpressionNode<T>>
-//operator-(std::unique_ptr<ExpressionNode<T>> &&l, T value) {
-//	auto r = std::make_unique< ConstantNode<T>>(value);
-//	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
-//	return res_p;
-//}
-//template<typename T>
-//std::unique_ptr<ExpressionNode<T>>
-//operator-(T value, std::unique_ptr<ExpressionNode<T>> &&r) {
-//	auto l = std::make_unique< ConstantNode<T>>(value);
-//	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
-//	return res_p;
-//}
-//
-//template<typename T>
-//std::unique_ptr<ExpressionNode<T>>
-//operator-(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode<T>> &&r) {
-//	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
-//	return res_p;
-//}
-
+auto operator-(auto && l, auto && r) -> decltype(convert_to_node(std::forward<decltype(l)>(l)))
+requires not_primitive<decltype(l)> or not_primitive<decltype(r)>{
+	using expr_node_t = decltype(convert_to_node(std::forward<decltype(l)>(l)))::element_type;
+	using T = expr_node_t::value_t;
+	auto l_p = convert_to_node(std::forward<decltype(l)>(l));
+	auto r_p = convert_to_node(std::forward<decltype(r)>(r));
+	auto res_p = std::make_unique<AddNode<T>>(std::move(l_p), std::move(r_p), true);
+	return res_p;
+}
 // division
-template<typename T>
-std::unique_ptr<ExpressionNode<T>> operator/(Var<T> &l, Var<T> &r) {
-	auto l_p = std::make_unique<Number<T>>(l);
-	auto r_p = std::make_unique<Number<T>>(r);
-	
+auto operator/(auto && l, auto && r) -> decltype(convert_to_node(std::forward<decltype(l)>(l)))
+requires not_primitive<decltype(l)> or not_primitive<decltype(r)>{
+	using expr_node_t = decltype(convert_to_node(std::forward<decltype(l)>(l)))::element_type;
+	using T = expr_node_t::value_t;
+	auto l_p = convert_to_node(std::forward<decltype(l)>(l));
+	auto r_p = convert_to_node(std::forward<decltype(r)>(r));
 	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r_p));
 	auto res_p = std::make_unique<MultNode<T>>(std::move(l_p), std::move(denominator));
 	return res_p;
 }
-
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator/(std::unique_ptr<ExpressionNode<T>> &&l, T value) {
-	auto r = std::make_unique< ConstantNode<T>>(value);
-	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r));
-	
-	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(denominator));
-	return res_p;
-}
-
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator/(T value, std::unique_ptr<ExpressionNode<T>> &&r) {
-	auto l = std::make_unique<ConstantNode<T>>(value);
-	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r));
-	
-	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(denominator));
-	return res_p;
-}
-
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator/(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode<T>> &&r) {
-	auto denominator = std::make_unique<DenominatorNode<T>>(std::move(r));
-	
-	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(denominator));
-	return res_p;
-}
-
 
 #endif //ZAPOCTOVY_PROGRAM_EXPRESSIONNODE_HPP

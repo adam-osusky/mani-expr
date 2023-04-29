@@ -10,11 +10,11 @@ int main() {
 	auto & y = expr.create_variable(3.0, "y");
 	auto & z = expr.create_variable(10.0, "z");
 	
-//	auto r = (expr["x"]*expr["x"]) / (expr["z"]-expr["x"]);
-	auto r = 4.0 + (expr["x"]*expr["x"]) / 2.0;
-//	auto r = expr["z"]+expr["x"];
-//	auto r = expr["x"] + expr["x"];
-	
+	auto r = (x*x) / (z-x) + 2.0;
+//	auto r = 2.0 + 1.0 + x * y;
+	std::cout << not_primitive<decltype(r)> << std::endl;
+	std::cout << not_primitive<decltype(2.0)> << std::endl;
+
 	expr.root = std::move(r);
 	expr.differentiate();
 	
