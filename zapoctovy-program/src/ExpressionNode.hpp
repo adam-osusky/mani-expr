@@ -21,6 +21,7 @@ template<typename T>
 class ExpressionNode {
 public:
 	using ptr_node = std::unique_ptr<ExpressionNode>;
+	using value_t = T;
 	
 	ExpressionNode() = default;
 	
@@ -37,7 +38,7 @@ public:
 	virtual T eval() = 0;
 	
 	virtual void differentiate() = 0;
-	virtual void to_string(std::stringstream & ss) = 0;
+	virtual void to_string(std::stringstream & ss) const = 0;
 //	virtual void set_derivative(T d) = 0;
 
 //	void simplify();
@@ -49,13 +50,18 @@ public:
 };
 
 template<typename T>
+class Number;
+
+template<typename T>
 struct Var {
 	explicit Var(T v) : value(v) {};
 	explicit Var(T v, const std::string & var_name) : value(v), name(var_name) {};
 	
 	Var() = default;
 	
-	explicit operator std::unique_ptr< ExpressionNode<T>>() const;
+	operator std::unique_ptr< ExpressionNode<T>>() {
+		return std::make_unique<Number<T>>(*this);
+	};
 	
 	T value;
 	T derivative = 0;
@@ -76,7 +82,7 @@ public:
 		val_ref.derivative += this->deriv_;
 	}
 	
-	void to_string(std::stringstream & ss) {
+	void to_string(std::stringstream & ss) const override {
 		ss << val_ref.name;
 	}
 	
@@ -120,7 +126,7 @@ public:
 		this->children_[1]->deriv_ += (sub_ * this->deriv_);
 	}
 	
-	void to_string(std::stringstream & ss) {
+	void to_string(std::stringstream & ss) const override {
 		ss << "(";
 		this->children_[0].get()->to_string(ss);
 		if (sub_ == T(1)) {
@@ -153,7 +159,7 @@ public:
 		this->children_[1]->deriv_ += this->deriv_ * this->children_[0]->value_;
 	}
 	
-	void to_string(std::stringstream & ss) {
+	void to_string(std::stringstream & ss) const override {
 		this->children_[0].get()->to_string(ss);
 		ss << " * ";
 		this->children_[1].get()->to_string(ss);
@@ -177,7 +183,7 @@ public:
 		this->children_[0]->deriv_ += this->deriv_ * T(-1) / (this->children_[0]->value_ * this->children_[0]->value_);
 	}
 	
-	void to_string(std::stringstream & ss) {
+	void to_string(std::stringstream & ss) const override {
 		ss << "(1/";
 		this->children_[0].get()->to_string(ss);
 		ss << ")";
@@ -185,103 +191,82 @@ public:
 };
 
 template<typename T>
-Var<T>::operator std::unique_ptr<ExpressionNode<T>>() const {
-	return std::make_unique<Number<T>>(*this);
+std::unique_ptr<ExpressionNode<T>> convert_to_node(Var<T> & var) {
+	return std::make_unique<Number<T>>(var);
+}
+template<typename T>
+std::unique_ptr<ExpressionNode<T>> convert_to_node(T value) {
+	return std::make_unique< ConstantNode<T>>(value);
 }
 
-//+ operator
 template<typename T>
-std::unique_ptr<ExpressionNode<T>> operator+(Var<T> &l, Var<T> &r) {
-	auto l_p = std::make_unique<Number<T>>(l);
-	auto r_p = std::make_unique<Number<T>>(r);
+std::unique_ptr<ExpressionNode<T>> convert_to_node(std::unique_ptr<ExpressionNode<T>> && value) {
+	return std::move(value);
+}
+
+template<typename T, typename V>
+concept is_convertible_to_node = requires(T t) {
+	{convert_to_node(t)} -> std::same_as<std::unique_ptr<ExpressionNode<V>>>;
+};
+
+//+ operator
+auto operator+(auto && l, auto && r) -> decltype(convert_to_node(std::forward<decltype(l)>(l))) {
+	using expr_node_t = decltype(convert_to_node(std::forward<decltype(l)>(l)))::element_type;
+	using T = expr_node_t::value_t;
+	auto l_p = convert_to_node(std::forward<decltype(l)>(l));
+	auto r_p = convert_to_node(std::forward<decltype(r)>(r));
 	auto res_p = std::make_unique<AddNode<T>>(std::move(l_p), std::move(r_p));
 	return res_p;
 }
 
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator+(std::unique_ptr<ExpressionNode<T>> &&l, T value) {
-	auto r = std::make_unique< ConstantNode<T>>(value);
-	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r));
-	return res_p;
-}
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator+(T value, std::unique_ptr<ExpressionNode<T>> &&r) {
-	auto l = std::make_unique< ConstantNode<T>>(value);
-	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r));
-	return res_p;
-}
-
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator+(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode<T>> &&r) {
-	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r));
-	return res_p;
-}
-
 //* operator
-template<typename T>
-std::unique_ptr<ExpressionNode<T>> operator*(Var<T> &l, Var<T> &r) {
-	auto l_p = std::make_unique<Number<T>>(l);
-	auto r_p = std::make_unique<Number<T>>(r);
+auto operator*(auto && l, auto && r) -> decltype(convert_to_node(std::forward<decltype(l)>(l))) {
+	using expr_node_t = decltype(convert_to_node(std::forward<decltype(l)>(l)))::element_type;
+	using T = expr_node_t::value_t;
+	auto l_p = convert_to_node(std::forward<decltype(l)>(l));
+	auto r_p = convert_to_node(std::forward<decltype(r)>(r));
 	auto res_p = std::make_unique<MultNode<T>>(std::move(l_p), std::move(r_p));
 	return res_p;
 }
 
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator*(std::unique_ptr<ExpressionNode<T>> &&l, T value) {
-	auto r = std::make_unique< ConstantNode<T>>(value);
-	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(r));
-	return res_p;
-}
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator*(T value, std::unique_ptr<ExpressionNode<T>> &&r) {
-	auto l = std::make_unique< ConstantNode<T>>(value);
-	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(r));
-	return res_p;
-}
-
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator*(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode<T>> &&r) {
-	auto res_p = std::make_unique<MultNode<T>>(std::move(l), std::move(r));
-	return res_p;
-}
-
-
 // subtraction
-template<typename T>
-std::unique_ptr<ExpressionNode<T>> operator-(Var<T> &l, Var<T> &r) {
-	auto l_p = std::make_unique<Number<T>>(l);
-	auto r_p = std::make_unique<Number<T>>(r);
-	auto res_p = std::make_unique<AddNode<T>>(std::move(l_p), std::move(r_p), true);
-	return res_p;
-}
-
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator-(std::unique_ptr<ExpressionNode<T>> &&l, T value) {
-	auto r = std::make_unique< ConstantNode<T>>(value);
-	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
-	return res_p;
-}
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator-(T value, std::unique_ptr<ExpressionNode<T>> &&r) {
-	auto l = std::make_unique< ConstantNode<T>>(value);
-	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
-	return res_p;
-}
-
-template<typename T>
-std::unique_ptr<ExpressionNode<T>>
-operator-(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode<T>> &&r) {
-	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
-	return res_p;
-}
+//auto operator-(auto && l, auto && r) -> decltype(convert_to_node(std::forward<decltype(l)>(l))) {
+//	using expr_node_t = decltype(convert_to_node(std::forward<decltype(l)>(l)))::element_type;
+//	using T = expr_node_t::value_t;
+//	auto l_p = convert_to_node(std::forward<decltype(l)>(l));
+//	auto r_p = convert_to_node(std::forward<decltype(r)>(r));
+//	auto res_p = std::make_unique<AddNode<T>>(std::move(l_p), std::move(r_p), true);
+//	return res_p;
+//}
+//template<typename T>
+//std::unique_ptr<ExpressionNode<T>> operator-(Var<T> &l, Var<T> &r) {
+//	auto l_p = std::make_unique<Number<T>>(l);
+//	auto r_p = std::make_unique<Number<T>>(r);
+//	auto res_p = std::make_unique<AddNode<T>>(std::move(l_p), std::move(r_p), true);
+//	return res_p;
+//}
+//
+//template<typename T>
+//std::unique_ptr<ExpressionNode<T>>
+//operator-(std::unique_ptr<ExpressionNode<T>> &&l, T value) {
+//	auto r = std::make_unique< ConstantNode<T>>(value);
+//	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
+//	return res_p;
+//}
+//template<typename T>
+//std::unique_ptr<ExpressionNode<T>>
+//operator-(T value, std::unique_ptr<ExpressionNode<T>> &&r) {
+//	auto l = std::make_unique< ConstantNode<T>>(value);
+//	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
+//	return res_p;
+//}
+//
+//template<typename T>
+//std::unique_ptr<ExpressionNode<T>>
+//operator-(std::unique_ptr<ExpressionNode<T>> &&l, std::unique_ptr<ExpressionNode<T>> &&r) {
+//	auto res_p = std::make_unique<AddNode<T>>(std::move(l), std::move(r), true);
+//	return res_p;
+//}
 
 // division
 template<typename T>
