@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <vector>
+#include <sstream>
 
 enum NodeType {
 	Num, Addition, Multiplication, Denominator, Const
@@ -36,6 +37,7 @@ public:
 	virtual T eval() = 0;
 	
 	virtual void differentiate() = 0;
+	virtual void to_string(std::stringstream & ss) = 0;
 //	virtual void set_derivative(T d) = 0;
 
 //	void simplify();
@@ -74,6 +76,10 @@ public:
 		val_ref.derivative += this->deriv_;
 	}
 	
+	void to_string(std::stringstream & ss) {
+		ss << val_ref.name;
+	}
+	
 	Var<T> &val_ref;
 };
 
@@ -87,6 +93,10 @@ public:
 	}
 	
 	void differentiate() override {}
+	
+	void to_string(std::stringstream & ss) const override {
+		ss << this->value_;
+	}
 };
 
 
@@ -109,7 +119,19 @@ public:
 		this->children_[0]->deriv_ += this->deriv_;
 		this->children_[1]->deriv_ += (sub_ * this->deriv_);
 	}
-
+	
+	void to_string(std::stringstream & ss) {
+		ss << "(";
+		this->children_[0].get()->to_string(ss);
+		if (sub_ == T(1)) {
+			ss << " + ";
+		} else {
+			ss << " - ";
+		}
+		this->children_[1].get()->to_string(ss);
+		ss << ")";
+	}
+	
 //private:
 	T sub_ = 1;
 };
@@ -130,6 +152,12 @@ public:
 		this->children_[0]->deriv_ += this->deriv_ * this->children_[1]->value_;
 		this->children_[1]->deriv_ += this->deriv_ * this->children_[0]->value_;
 	}
+	
+	void to_string(std::stringstream & ss) {
+		this->children_[0].get()->to_string(ss);
+		ss << " * ";
+		this->children_[1].get()->to_string(ss);
+	}
 };
 
 // 1/f
@@ -147,6 +175,12 @@ public:
 	
 	void differentiate() override {
 		this->children_[0]->deriv_ += this->deriv_ * T(-1) / (this->children_[0]->value_ * this->children_[0]->value_);
+	}
+	
+	void to_string(std::stringstream & ss) {
+		ss << "(1/";
+		this->children_[0].get()->to_string(ss);
+		ss << ")";
 	}
 };
 
