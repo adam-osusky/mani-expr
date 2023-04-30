@@ -39,7 +39,6 @@ public:
 	
 	virtual void differentiate() = 0;
 	virtual void to_string(std::stringstream & ss) const = 0;
-//	virtual void set_derivative(T d) = 0;
 
 //	void simplify();
 //protected:
@@ -59,10 +58,6 @@ struct Var {
 	explicit Var(T v, const std::string & var_name) : value(v), name(var_name) {};
 	
 	Var() = default;
-	
-//	operator std::unique_ptr< ExpressionNode<T>>() {
-//		return std::make_unique<Number<T>>(*this);
-//	};
 	
 	T value;
 	T derivative = 0;
@@ -138,7 +133,7 @@ public:
 		this->children_[1].get()->to_string(ss);
 		ss << ")";
 	}
-	
+
 //private:
 	T sub_ = 1;
 };

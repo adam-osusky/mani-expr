@@ -10,10 +10,13 @@ int main() {
 	auto & y = expr.create_variable(3.0, "y");
 	auto & z = expr.create_variable(10.0, "z");
 	
-	auto r = (x*x) / (z-x) + 2.0;
-//	auto r = 2.0 + 1.0 + x * y;
-	std::cout << not_primitive<decltype(r)> << std::endl;
-	std::cout << not_primitive<decltype(2.0)> << std::endl;
+//	auto r = (x*x) / (z-x) + 2.0;
+//	auto r = x / 2.0;
+//	auto p = std::make_unique<Number<T>>(x);
+//	auto r = 2.0 * p->val_ref;
+	auto r = x + x;
+//	std::cout << not_primitive<decltype(r)> << std::endl;
+//	std::cout << not_primitive<decltype(2.0)> << std::endl;
 
 	expr.root = std::move(r);
 	expr.differentiate();
@@ -22,6 +25,8 @@ int main() {
 	std::cout << "derivation of y : " << expr["y"].derivative << std::endl;
 	std::cout << "derivation of z : " << expr["z"].derivative << std::endl;
 	
+	std::cout << expr.to_string() << std::endl;
+	expr.factorize();
 	std::cout << expr.to_string() << std::endl;
 	
 	return 0;
