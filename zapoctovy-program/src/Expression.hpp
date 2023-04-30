@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <iostream>
 #include "ExpressionNode.hpp"
 
 template<typename T>
@@ -17,6 +18,7 @@ public:
 	auto operator[](const std::string x) -> Var<T> &;
 	void differentiate();
 	std::string to_string();
+	void factorize();
 	
 	std::map< std::string, Var<T>, std::less<>> variables;
 	std::unique_ptr<ExpressionNode<T>> root;
@@ -24,9 +26,40 @@ private:
 	void build_topo(ExpressionNode<T> * node,
 					std::set<ExpressionNode<T> *> &visited,
 					std::vector<ExpressionNode<T> *> &topo);
-	void traverse_for_string(ExpressionNode<T> * node, std::stringstream & ss);
 	std::vector<ExpressionNode<T> *> topo_order;
+	std::unique_ptr<ExpressionNode<T>> factorize_impl(ExpressionNode<T> * node);
 };
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>  Expression<T>::factorize_impl(ExpressionNode<T> *node) {
+	bool child_factorized = false;
+	for (auto && child : node->children_) {
+		auto fact = factorize_impl(child.get());
+		if (fact) {
+			child_factorized = true; //TODO change childs;
+		}
+	}
+	if (node->n_type_ == NodeType::Addition) {
+		if (node->children_[0]->n_type_ == NodeType::Num and node->children_[1]->n_type_ == NodeType::Num) {
+			auto * l = dynamic_cast<Number<T>*>(node->children_[0].get());
+			auto * p = dynamic_cast<Number<T>*>(node->children_[1].get());
+			if (l->val_ref.name == p->val_ref.name) {
+//				std::cout << "hit" << std::endl;
+				return T(2) * p->val_ref;
+			}
+		}
+	}
+	return std::unique_ptr<ExpressionNode<T>>();
+}
+
+template<typename T>
+void Expression<T>::factorize() {
+	auto new_r = factorize_impl(root.get());
+	if (new_r) {
+		root = std::move(new_r);
+	}
+	std::cout << "expr.factorize() = " << new_r << std::endl;
+}
 
 template<typename T>
 Var<T> & Expression<T>::create_variable(T value, const std::string & name) {
@@ -75,48 +108,5 @@ std::string Expression<T>::to_string() {
 	
 	return ss.str();
 }
-
-//template<typename T>
-//void Expression<T>::traverse_for_string(ExpressionNode<T> * node, std::stringstream & ss) {
-//	switch (node->n_type_) {
-//		case NodeType::Num:
-//		{
-//			auto * p = dynamic_cast<Number<T>*>(node);
-//			ss << p->val_ref.name;
-//			break;
-//		}
-//		case NodeType::Addition:
-//		{
-//			ss << "(";
-//			traverse_for_string(node->children_[0].get(), ss);
-//			auto * p = dynamic_cast<AddNode<T>*>(node);
-//			if (p->sub_ == T(1)) {
-//				ss << " + ";
-//			} else {
-//				ss << " - ";
-//			}
-//			traverse_for_string(node->children_[1].get(), ss);
-//			ss << ")";
-//			break;
-//
-//		}
-//		case NodeType::Multiplication:
-////			ss << "(";
-//			traverse_for_string(node->children_[0].get(), ss);
-//			ss << " * ";
-//			traverse_for_string(node->children_[1].get(), ss);
-////			ss << ")";
-//			break;
-//		case NodeType::Denominator:
-//			ss << "(1/";
-//			traverse_for_string(node->children_[0].get(), ss);
-//			ss << ")";
-//			break;
-//		case NodeType::Const:
-//			ss << node->value_;
-//		default:
-//			break;
-//	}
-//}
 
 #endif //ZAPOCTOVY_PROGRAM_EXPRESSION_HPP
