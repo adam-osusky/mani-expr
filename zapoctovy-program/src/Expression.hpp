@@ -44,7 +44,10 @@ std::unique_ptr<ExpressionNode<T>>  Expression<T>::factorize_impl(ExpressionNode
 			auto * l = dynamic_cast<Number<T>*>(node->children_[0].get());
 			auto * p = dynamic_cast<Number<T>*>(node->children_[1].get());
 			if (l->val_ref.name == p->val_ref.name) {
-//				std::cout << "hit" << std::endl;
+				std::cout << "hit" << std::endl;
+				if (dynamic_cast<AddNode<T>*>(node)->sub_ == T(-1)){
+					return std::make_unique<ConstantNode<T>>(0);
+				}
 				return T(2) * p->val_ref;
 			}
 		}
