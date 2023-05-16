@@ -14,7 +14,8 @@ int main() {
 //	auto r = x / 2.0;
 //	auto p = std::make_unique<Number<T>>(x);
 //	auto r = 2.0 * p->val_ref;
-	auto r = 12.0*x - x*6.0 - 5.0*x +4.0*x;
+//	auto r = 12.0*x - x*6.0 - 5.0*x +4.0*x;
+	auto r = x + x;
 //	std::cout << not_primitive<decltype(r)> << std::endl;
 //	std::cout << not_primitive<decltype(2.0)> << std::endl;
 

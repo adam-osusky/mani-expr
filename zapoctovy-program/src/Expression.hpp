@@ -129,70 +129,64 @@ std::unique_ptr<ExpressionNode<T>>  Expression<T>::factorize_impl(ExpressionNode
 				}
 			}
 			
-//			//MULT + (NUM)y
-//			if (node->children_[1]->n_type_ == NodeType::Num) {
-//				auto y = dynamic_cast<Number<T> *>(node->children_[1].get());
-//				//(NUM)x * something + (NUM)y
-//				if (node->children_[0]->children_[0]->n_type_ == NodeType::Num) {
-//
-//				}
-//
-//				// something * (NUM)x + (NUM)y
-//			}
+			//MULT + (NUM)y
+			if (node->children_[1]->n_type_ == NodeType::Num) {
+				auto y = dynamic_cast<Number<T> *>(node->children_[1].get());
+				
+				//(NUM)x * something + (NUM)y
+				if (node->children_[0]->children_[0]->n_type_ == NodeType::Num) {
+					auto x = dynamic_cast<Number<T> *>(node->children_[0]->children_[0].get());
+					if (x->val_ref.name == y->val_ref.name) {
+						return plus_or_minus(std::move(node->children_[0]->children_[1]),
+											 std::make_unique<ConstantNode<T>>(1), is_minus) * x->val_ref;
+					}
+				}
+				
+				// something * (NUM)x + (NUM)y
+				if (node->children_[0]->children_[1]->n_type_ == NodeType::Num) {
+					auto x = dynamic_cast<Number<T> *>(node->children_[0]->children_[1].get());
+					if (x->val_ref.name == y->val_ref.name) {
+						return plus_or_minus(std::move(node->children_[0]->children_[0]),
+											 std::make_unique<ConstantNode<T>>(1), is_minus) * x->val_ref;
+					}
+				}
+			}
 		}
 		
-		
-		
-//		// x + x => 2*x || x - x => 0
-//		if (node->children_[0]->n_type_ == NodeType::Num and node->children_[1]->n_type_ == NodeType::Num) {
-//			auto * l = dynamic_cast<Number<T>*>(node->children_[0].get());
-//			auto * p = dynamic_cast<Number<T>*>(node->children_[1].get());
-//			if (l->val_ref.name == p->val_ref.name) {
-//				std::cout << "hit sum" << std::endl;
-//				if (dynamic_cast<AddNode<T>*>(node)->sub_ == T(-1)){
-//					return std::make_unique<ConstantNode<T>>(0);
-//				}
-//				return T(2) * p->val_ref;
-//			}
-//		}
-//
-//
-//		// if(y==x) : a*y +- x => (a +- 1)*x
-//		if (node->children_[0]->n_type_ == NodeType::Multiplication and node->children_[1]->n_type_ == NodeType::Num) {
-//			auto x = dynamic_cast<Number<T> *>(node->children_[1].get());
-//			auto sub = dynamic_cast<AddNode<T> *>(node)->sub_;
-//			auto m_child_l_nt = node->children_[0]->children_[0]->n_type_;
-//			auto m_child_r_nt = node->children_[0]->children_[1]->n_type_;
-//
-//			// num/const * x add x
-//			if ((m_child_l_nt == NodeType::Num || m_child_l_nt == NodeType::Const) and m_child_r_nt == NodeType::Num) {
-//				auto m_child_r = dynamic_cast<Number<T> *>(node->children_[0]->children_[1].get());
-//				if (m_child_r->val_ref.name == x->val_ref.name) {
-//					std::cout << "hit mult 1" << std::endl;
-//					if (m_child_l_nt == NodeType::Const)
-//						return (node->children_[0]->children_[0]->value_ + sub) * x->val_ref;
-//					return (std::move(node->children_[0]->children_[0]) + sub) * x->val_ref;
-//				}
-//			}
-//
-//			//x * num/const add x
-//			if ((m_child_r_nt == NodeType::Num || m_child_r_nt == NodeType::Const) and m_child_l_nt == NodeType::Num) {
-//				auto m_child_l = dynamic_cast<Number<T> *>(node->children_[1].get());
-//				if (m_child_l->val_ref.name == x->val_ref.name) {
-//					std::cout << "hit mult 2" << std::endl;
-//					if (m_child_r_nt == NodeType::Const)
-//						return (node->children_[0]->children_[1]->value_ + sub) * x->val_ref;
-//					return (std::move(node->children_[0]->children_[1]) + sub) * x->val_ref;
-//				}
-//			}
-//		}
-//		// if(y==x) : x +- a*y => (a +- 1)*x
-//		} else if (node->children_[1]->n_type_ == NodeType::Multiplication and node->children_[0]->n_type_ == NodeType::Num){
-//			auto x = dynamic_cast<Number<T>*>(node->children_[0].get());
-//			auto sub = dynamic_cast<AddNode<T>*>(node)->sub_;
-//			auto m_child_l_nt = node->children_[0]->children_[0]->n_type_;
-//			auto m_child_r_nt = node->children_[0]->children_[1]->n_type_;
-//		}
+		// (NUM)x + something
+		if (node->children_[0]->n_type_ == NodeType::Num) {
+			auto x = dynamic_cast< Number<T> *>(node->children_[0].get());
+			
+			// (NUM)x + MULT
+			if (node->children_[1]->n_type_ == NodeType::Multiplication) {
+				// (NUM)x + something * (NUM)y
+				if (node->children_[1]->children_[1]->n_type_ == NodeType::Num) {
+					auto y = dynamic_cast< Number<T> *>(node->children_[1]->children_[1].get());
+					if (x->val_ref.name == y->val_ref.name) {
+						return plus_or_minus(std::move(node->children_[1]->children_[0]),
+											 std::make_unique<ConstantNode<T>>(1), is_minus) * x->val_ref;
+					}
+				}
+				
+				// (NUM)x + (NUM)y * something
+				if (node->children_[1]->children_[0]->n_type_ == NodeType::Num) {
+					auto y = dynamic_cast< Number<T> *>(node->children_[1]->children_[0].get());
+					if (x->val_ref.name == y->val_ref.name) {
+						return plus_or_minus(std::move(node->children_[1]->children_[1]),
+											 std::make_unique<ConstantNode<T>>(1), is_minus) * x->val_ref;
+					}
+				}
+			}
+			
+			// (NUM)x + (NUM)y
+			if (node->children_[1]->n_type_ == NodeType::Num) {
+				auto y = dynamic_cast< Number<T> *>(node->children_[1].get());
+				if (x->val_ref.name == y->val_ref.name) {
+					if (is_minus) return std::make_unique< ConstantNode<T>>(0);
+					return T(2) * x->val_ref;
+				}
+			}
+		}
 	}
 	return std::unique_ptr<ExpressionNode<T>>();
 }
