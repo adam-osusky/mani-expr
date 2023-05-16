@@ -42,8 +42,8 @@ public:
 
 //	void simplify();
 //protected:
-	T value_ = 0;
 	NodeType n_type_;
+	T value_ = 0;
 	T deriv_ = 0;
 	std::vector<ptr_node> children_ = {};
 };

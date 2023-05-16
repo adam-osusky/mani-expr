@@ -28,29 +28,171 @@ private:
 					std::vector<ExpressionNode<T> *> &topo);
 	std::vector<ExpressionNode<T> *> topo_order;
 	std::unique_ptr<ExpressionNode<T>> factorize_impl(ExpressionNode<T> * node);
+	std::unique_ptr<ExpressionNode<T>> plus_or_minus(std::unique_ptr<ExpressionNode<T>> && l, std::unique_ptr<ExpressionNode<T>> && r, bool is_minus);
+//	void get_a_times_num(ExpressionNode<T> * node, T & a, ExpressionNode<T> * num);
+	
+	bool changed_graph = true;
 };
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>>
+Expression<T>::plus_or_minus(std::unique_ptr<ExpressionNode<T>> && l, std::unique_ptr<ExpressionNode<T>> && r, bool is_minus) {
+	if (is_minus) {
+		return std::move(l) - std::move(r);
+	} else {
+		return std::move(l) + std::move(r);
+	}
+}
+
+//template<typename T>
+//void Expression<T>::get_a_times_num(ExpressionNode<T> *node, T &a, ExpressionNode<T> *num) { // get from a*x
+//	if (node->n_type_ == NodeType::Multiplication) {
+//		if (node->children_[0]->n_type_ == NodeType::Num) {
+//			num =
+//		}
+//	}
+//}
 
 template<typename T>
 std::unique_ptr<ExpressionNode<T>>  Expression<T>::factorize_impl(ExpressionNode<T> *node) {
 	bool child_factorized = false;
-	for (auto && child : node->children_) {
-		auto fact = factorize_impl(child.get());
-		if (fact) {
-			child_factorized = true; //TODO change childs;
+	for (std::size_t i = 0; i < node->children_.size(); i++) {
+		auto new_child = factorize_impl(node->children_[i].get());
+		if (new_child) {
+			child_factorized = true;
+			node->children_[i] = std::move(new_child);
+			std::cout << this->to_string() << std::endl;
 		}
 	}
+	// if (x==y): a*x add b*y => (a add b)*x
 	if (node->n_type_ == NodeType::Addition) {
-		if (node->children_[0]->n_type_ == NodeType::Num and node->children_[1]->n_type_ == NodeType::Num) {
-			auto * l = dynamic_cast<Number<T>*>(node->children_[0].get());
-			auto * p = dynamic_cast<Number<T>*>(node->children_[1].get());
-			if (l->val_ref.name == p->val_ref.name) {
-				std::cout << "hit" << std::endl;
-				if (dynamic_cast<AddNode<T>*>(node)->sub_ == T(-1)){
-					return std::make_unique<ConstantNode<T>>(0);
+		auto sub = dynamic_cast<AddNode<T> *>(node)->sub_;
+		bool is_minus = false;
+		if (sub == T(-1)) is_minus = true;
+		
+		// MULT + something
+		if (node->children_[0]->n_type_ == NodeType::Multiplication) {
+			
+			// MULT + MULT
+			if (node->children_[1]->n_type_ == NodeType::Multiplication) {
+				
+				// (NUM)x * something + MULT
+				if (node->children_[0]->children_[0]->n_type_ == NodeType::Num) {
+					auto x = dynamic_cast<Number<T> *>(node->children_[0]->children_[0].get());
+					
+					// (NUM)x * something + (NUM)y * something
+					if (node->children_[1]->children_[0]->n_type_ == NodeType::Num) {
+						auto y = dynamic_cast<Number<T> *>(node->children_[1]->children_[0].get());
+						// x == y
+						if (x->val_ref.name == y->val_ref.name) {
+							return plus_or_minus(std::move(node->children_[0]->children_[1]),
+												 std::move(node->children_[1]->children_[1]), is_minus) * x->val_ref;
+						}
+						
+					}
+					
+					// (NUM)x * something + something * (NUM)y
+					if (node->children_[1]->children_[1]->n_type_ == NodeType::Num) {
+						auto y = dynamic_cast<Number<T> *>(node->children_[1]->children_[1].get());
+						// x == y
+						if (x->val_ref.name == y->val_ref.name) {
+							return plus_or_minus(std::move(node->children_[0]->children_[1]),
+												 std::move(node->children_[1]->children_[0]), is_minus) * x->val_ref;
+						}
+					}
 				}
-				return T(2) * p->val_ref;
+				
+				// something * (NUM)x + MULT
+				if (node->children_[0]->children_[1]->n_type_ == NodeType::Num) {
+					auto x = dynamic_cast<Number<T> *>(node->children_[0]->children_[1].get());
+					
+					// something * (NUM)x + (NUM)y * something
+					if (node->children_[1]->children_[0]->n_type_ == NodeType::Num) {
+						auto y = dynamic_cast<Number<T> *>(node->children_[1]->children_[0].get());
+						// x == y
+						if (x->val_ref.name == y->val_ref.name) {
+							return plus_or_minus(std::move(node->children_[0]->children_[0]),
+												 std::move(node->children_[1]->children_[1]), is_minus) * x->val_ref;
+						}
+						
+					}
+					
+					// something * (NUM)x + something * (NUM)y
+					if (node->children_[1]->children_[1]->n_type_ == NodeType::Num) {
+						auto y = dynamic_cast<Number<T> *>(node->children_[1]->children_[1].get());
+						// x == y
+						if (x->val_ref.name == y->val_ref.name) {
+							return plus_or_minus(std::move(node->children_[0]->children_[0]),
+												 std::move(node->children_[1]->children_[0]), is_minus) * x->val_ref;
+						}
+					}
+				}
 			}
+			
+//			//MULT + (NUM)y
+//			if (node->children_[1]->n_type_ == NodeType::Num) {
+//				auto y = dynamic_cast<Number<T> *>(node->children_[1].get());
+//				//(NUM)x * something + (NUM)y
+//				if (node->children_[0]->children_[0]->n_type_ == NodeType::Num) {
+//
+//				}
+//
+//				// something * (NUM)x + (NUM)y
+//			}
 		}
+		
+		
+		
+//		// x + x => 2*x || x - x => 0
+//		if (node->children_[0]->n_type_ == NodeType::Num and node->children_[1]->n_type_ == NodeType::Num) {
+//			auto * l = dynamic_cast<Number<T>*>(node->children_[0].get());
+//			auto * p = dynamic_cast<Number<T>*>(node->children_[1].get());
+//			if (l->val_ref.name == p->val_ref.name) {
+//				std::cout << "hit sum" << std::endl;
+//				if (dynamic_cast<AddNode<T>*>(node)->sub_ == T(-1)){
+//					return std::make_unique<ConstantNode<T>>(0);
+//				}
+//				return T(2) * p->val_ref;
+//			}
+//		}
+//
+//
+//		// if(y==x) : a*y +- x => (a +- 1)*x
+//		if (node->children_[0]->n_type_ == NodeType::Multiplication and node->children_[1]->n_type_ == NodeType::Num) {
+//			auto x = dynamic_cast<Number<T> *>(node->children_[1].get());
+//			auto sub = dynamic_cast<AddNode<T> *>(node)->sub_;
+//			auto m_child_l_nt = node->children_[0]->children_[0]->n_type_;
+//			auto m_child_r_nt = node->children_[0]->children_[1]->n_type_;
+//
+//			// num/const * x add x
+//			if ((m_child_l_nt == NodeType::Num || m_child_l_nt == NodeType::Const) and m_child_r_nt == NodeType::Num) {
+//				auto m_child_r = dynamic_cast<Number<T> *>(node->children_[0]->children_[1].get());
+//				if (m_child_r->val_ref.name == x->val_ref.name) {
+//					std::cout << "hit mult 1" << std::endl;
+//					if (m_child_l_nt == NodeType::Const)
+//						return (node->children_[0]->children_[0]->value_ + sub) * x->val_ref;
+//					return (std::move(node->children_[0]->children_[0]) + sub) * x->val_ref;
+//				}
+//			}
+//
+//			//x * num/const add x
+//			if ((m_child_r_nt == NodeType::Num || m_child_r_nt == NodeType::Const) and m_child_l_nt == NodeType::Num) {
+//				auto m_child_l = dynamic_cast<Number<T> *>(node->children_[1].get());
+//				if (m_child_l->val_ref.name == x->val_ref.name) {
+//					std::cout << "hit mult 2" << std::endl;
+//					if (m_child_r_nt == NodeType::Const)
+//						return (node->children_[0]->children_[1]->value_ + sub) * x->val_ref;
+//					return (std::move(node->children_[0]->children_[1]) + sub) * x->val_ref;
+//				}
+//			}
+//		}
+//		// if(y==x) : x +- a*y => (a +- 1)*x
+//		} else if (node->children_[1]->n_type_ == NodeType::Multiplication and node->children_[0]->n_type_ == NodeType::Num){
+//			auto x = dynamic_cast<Number<T>*>(node->children_[0].get());
+//			auto sub = dynamic_cast<AddNode<T>*>(node)->sub_;
+//			auto m_child_l_nt = node->children_[0]->children_[0]->n_type_;
+//			auto m_child_r_nt = node->children_[0]->children_[1]->n_type_;
+//		}
 	}
 	return std::unique_ptr<ExpressionNode<T>>();
 }
@@ -58,10 +200,11 @@ std::unique_ptr<ExpressionNode<T>>  Expression<T>::factorize_impl(ExpressionNode
 template<typename T>
 void Expression<T>::factorize() {
 	auto new_r = factorize_impl(root.get());
+	std::cout << "expr.factorize() = " << new_r << std::endl;
 	if (new_r) {
 		root = std::move(new_r);
 	}
-	std::cout << "expr.factorize() = " << new_r << std::endl;
+	changed_graph = true;
 }
 
 template<typename T>
@@ -77,15 +220,22 @@ auto Expression<T>::operator[](const std::string x) -> Var<T> & {
 
 template<typename T>
 void Expression<T>::differentiate() {
-	if (topo_order.empty()){
+	if (topo_order.empty() or changed_graph){
 		std::set< ExpressionNode<T>*> visited;
+		topo_order.clear();
 		build_topo(root.get(), visited, topo_order);
+		changed_graph = false;
 	}
+	
+	// TODO derivations change to zero !
 
 	root->eval();
 	root->deriv_ = T(1);
 
 	for (auto it = topo_order.rbegin(); it != topo_order.rend() ; ++it) {
+//		std::stringstream ss;
+//		(*it)->to_string(ss);
+//		std::cout << ss.str() << std::endl;
 		(*it)->differentiate();
 	}
 }
