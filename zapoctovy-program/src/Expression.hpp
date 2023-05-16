@@ -11,6 +11,9 @@
 #include <iostream>
 #include "ExpressionNode.hpp"
 
+//TODO big 5 for Node amd Expression
+//TODO check const
+
 template<typename T>
 class Expression {
 public:
@@ -19,6 +22,7 @@ public:
 	void differentiate();
 	std::string to_string();
 	void factorize();
+	void simplify();
 	
 	std::map< std::string, Var<T>, std::less<>> variables;
 	std::unique_ptr<ExpressionNode<T>> root;
@@ -28,11 +32,95 @@ private:
 					std::vector<ExpressionNode<T> *> &topo);
 	std::vector<ExpressionNode<T> *> topo_order;
 	std::unique_ptr<ExpressionNode<T>> factorize_impl(ExpressionNode<T> * node);
+	std::unique_ptr<ExpressionNode<T>> simplify_impl(ExpressionNode<T> * node);
 	std::unique_ptr<ExpressionNode<T>> plus_or_minus(std::unique_ptr<ExpressionNode<T>> && l, std::unique_ptr<ExpressionNode<T>> && r, bool is_minus);
-//	void get_a_times_num(ExpressionNode<T> * node, T & a, ExpressionNode<T> * num);
 	
 	bool changed_graph = true;
 };
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>> Expression<T>::simplify_impl(ExpressionNode<T> *node) {
+	for (std::size_t i = 0; i < node->children_.size(); i++) {
+		auto new_child = simplify_impl(node->children_[i].get());
+		if (new_child) {
+			node->children_[i] = std::move(new_child);
+		}
+	}
+	
+	// MULT
+	if (node->n_type_ == NodeType::Multiplication) {
+		
+		//constant * something
+		if (node->children_[0]->n_type_ == NodeType::Const) {
+			
+			//1 * something = something
+			if (node->children_[0]->value_ == T(1)) {
+				return std::move(node->children_[1]);
+			}
+			//0 * something = 0
+			if (node->children_[0]->value_ == T(0)) {
+				return std::make_unique< ConstantNode<T>>(0);
+			}
+			
+			// const * const
+			if (node->children_[1]->n_type_ == NodeType::Const) {
+				T value = node->children_[0]->value_ * node->children_[1]->value_;
+				return std::make_unique< ConstantNode<T>>(value);
+			}
+		}
+		
+		//something * constant
+		if (node->children_[1]->n_type_ == NodeType::Const) {
+
+			//something * 1 = something
+			if (node->children_[1]->value_ == T(1)) {
+				return std::move(node->children_[0]);
+			}
+			//something * 0 = 0
+			if (node->children_[1]->value_ == T(0)) {
+				return std::make_unique< ConstantNode<T>>(0);
+			}
+		}
+		
+		//something / 1 = something
+		if (node->children_[1]->n_type_ == NodeType::Denominator && node->children_[1]->children_[0]->value_ == T(1)) {
+			return std::move(node->children_[0]);
+		}
+	}
+	
+	//SUM
+	if (node->n_type_ == NodeType::Addition) {
+		auto sub = dynamic_cast<AddNode<T> *>(node)->sub_;
+		bool is_minus = false;
+		if (sub == T(-1)) is_minus = true;
+		
+		//a + 0 = a
+		if (node->children_[1]->n_type_ == NodeType::Const && node->children_[1]->value_ == T(0)) {
+			return std::move(node->children_[0]);
+		}
+		// 0 + a = a
+		if (node->children_[0]->n_type_ == NodeType::Const && node->children_[0]->value_ == T(0)) {
+			return std::move(node->children_[1]);
+		}
+	}
+	
+	//TODO 0*s, 1*s, a/1, a+0, a-0, c1 op c2 => c3
+	// Perform trivial simplifications: 0*a => 0, 1*a => a, a/1 => a,
+	//a+0 => a, a-0 => a  c1 op c2 => c3  where a is any expression,
+	//the ci are constants, and op is any of * / + -
+	
+	return std::unique_ptr<ExpressionNode<T>>();
+}
+
+template<typename T>
+void Expression<T>::simplify() {
+	auto new_r = simplify_impl(root.get());
+	std::cout << "expr.simplify() = " << new_r << std::endl;
+	if (new_r) {
+		root = std::move(new_r);
+	}
+	changed_graph = true;
+}
 
 template<typename T>
 std::unique_ptr<ExpressionNode<T>>
@@ -44,24 +132,13 @@ Expression<T>::plus_or_minus(std::unique_ptr<ExpressionNode<T>> && l, std::uniqu
 	}
 }
 
-//template<typename T>
-//void Expression<T>::get_a_times_num(ExpressionNode<T> *node, T &a, ExpressionNode<T> *num) { // get from a*x
-//	if (node->n_type_ == NodeType::Multiplication) {
-//		if (node->children_[0]->n_type_ == NodeType::Num) {
-//			num =
-//		}
-//	}
-//}
-
 template<typename T>
 std::unique_ptr<ExpressionNode<T>>  Expression<T>::factorize_impl(ExpressionNode<T> *node) {
-	bool child_factorized = false;
 	for (std::size_t i = 0; i < node->children_.size(); i++) {
 		auto new_child = factorize_impl(node->children_[i].get());
 		if (new_child) {
-			child_factorized = true;
 			node->children_[i] = std::move(new_child);
-			std::cout << this->to_string() << std::endl;
+//			std::cout << this->to_string() << std::endl;
 		}
 	}
 	// if (x==y): a*x add b*y => (a add b)*x
