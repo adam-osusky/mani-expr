@@ -13,6 +13,7 @@
 
 //TODO big 5 for Node amd Expression
 //TODO check const
+//TODO _impl funcs returrn bool that it changed something?
 
 template<typename T>
 class Expression {
@@ -82,33 +83,45 @@ std::unique_ptr<ExpressionNode<T>> Expression<T>::simplify_impl(ExpressionNode<T
 			}
 		}
 		
-		//something / 1 = something
-		if (node->children_[1]->n_type_ == NodeType::Denominator && node->children_[1]->children_[0]->value_ == T(1)) {
-			return std::move(node->children_[0]);
+//		//something / 1 = something
+//		if (node->children_[1]->n_type_ == NodeType::Denominator && node->children_[1]->children_[0]->value_ == T(1)) {
+//			return std::move(node->children_[0]);
+//		}
+		//something / something
+		if (node->children_[1]->n_type_ == NodeType::Denominator) {
+			// something / const
+			if (node->children_[1]->children_[0]->n_type_ == NodeType::Const) {
+				//something / 1 = something
+				if (node->children_[1]->children_[0]->value_ == T(1)) {
+					return std::move(node->children_[0]);
+				}
+				// const / const
+				if (node->children_[0]->n_type_ == NodeType::Const) {
+					T value = node->children_[0]->value_ / node->children_[1]->children_[0]->value_;
+					return std::make_unique< ConstantNode<T>>(value);
+				}
+			}
 		}
 	}
 	
 	//SUM
 	if (node->n_type_ == NodeType::Addition) {
 		auto sub = dynamic_cast<AddNode<T> *>(node)->sub_;
-		bool is_minus = false;
-		if (sub == T(-1)) is_minus = true;
 		
-		//a + 0 = a
+		//a +- 0 = a
 		if (node->children_[1]->n_type_ == NodeType::Const && node->children_[1]->value_ == T(0)) {
 			return std::move(node->children_[0]);
 		}
-		// 0 + a = a
+		// 0 +- a = a
 		if (node->children_[0]->n_type_ == NodeType::Const && node->children_[0]->value_ == T(0)) {
 			return std::move(node->children_[1]);
 		}
+		//const +- const
+		if (node->children_[0]->n_type_ == NodeType::Const && node->children_[1]->n_type_ == NodeType::Const) {
+			T value = node->children_[0]->value_ + (sub * node->children_[1]->value_);
+			return std::make_unique< ConstantNode<T>>(value);
+		}
 	}
-	
-	//TODO 0*s, 1*s, a/1, a+0, a-0, c1 op c2 => c3
-	// Perform trivial simplifications: 0*a => 0, 1*a => a, a/1 => a,
-	//a+0 => a, a-0 => a  c1 op c2 => c3  where a is any expression,
-	//the ci are constants, and op is any of * / + -
-	
 	return std::unique_ptr<ExpressionNode<T>>();
 }
 
@@ -304,9 +317,9 @@ void Expression<T>::differentiate() {
 	root->deriv_ = T(1);
 
 	for (auto it = topo_order.rbegin(); it != topo_order.rend() ; ++it) {
-//		std::stringstream ss;
-//		(*it)->to_string(ss);
-//		std::cout << ss.str() << std::endl;
+		std::stringstream ss;
+		(*it)->to_string(ss);
+		std::cout << ss.str() << std::endl;
 		(*it)->differentiate();
 	}
 }
