@@ -7,6 +7,7 @@
 
 
 #include <memory>
+#include <utility>
 #include <vector>
 #include <sstream>
 
@@ -25,7 +26,7 @@ public:
 	
 	ExpressionNode() = default;
 	
-	ExpressionNode(NodeType n_type, T val) : n_type_(n_type), value_(val) {} // not collision with variadic temp??
+	ExpressionNode(NodeType n_type, T val) : n_type_(n_type), value_(val) {} //const for args?
 
 //	explicit ExpressionNode(NodeType n_type) : n_type_(n_type) {}
 	template<typename... Ts>
@@ -40,8 +41,6 @@ public:
 	virtual void differentiate() = 0;
 	virtual void to_string(std::stringstream & ss) const = 0;
 
-//	void simplify();
-//protected:
 	NodeType n_type_;
 	T value_ = 0;
 	T deriv_ = 0;
@@ -55,7 +54,7 @@ template<typename T>
 struct Var {
 	using is_var = void;
 	explicit Var(T v) : value(v) {};
-	explicit Var(T v, const std::string & var_name) : value(v), name(var_name) {};
+	explicit Var(T v, std::string  var_name) : value(v), name(std::move(var_name)) {};
 	
 	Var() = default;
 	
@@ -118,8 +117,8 @@ public:
 	}
 	
 	void differentiate() override {
-		this->children_[0]->deriv_ += this->deriv_;
-		this->children_[1]->deriv_ += (sub_ * this->deriv_);
+		this->children_[0]->deriv_ = this->deriv_;
+		this->children_[1]->deriv_ = (sub_ * this->deriv_);
 	}
 	
 	void to_string(std::stringstream & ss) const override {
@@ -151,8 +150,8 @@ public:
 	}
 	
 	void differentiate() override {
-		this->children_[0]->deriv_ += this->deriv_ * this->children_[1]->value_;
-		this->children_[1]->deriv_ += this->deriv_ * this->children_[0]->value_;
+		this->children_[0]->deriv_ = this->deriv_ * this->children_[1]->value_;
+		this->children_[1]->deriv_ = this->deriv_ * this->children_[0]->value_;
 	}
 	
 	void to_string(std::stringstream & ss) const override {
@@ -176,7 +175,7 @@ public:
 	}
 	
 	void differentiate() override {
-		this->children_[0]->deriv_ += this->deriv_ * T(-1) / (this->children_[0]->value_ * this->children_[0]->value_);
+		this->children_[0]->deriv_ = this->deriv_ * T(-1) / (this->children_[0]->value_ * this->children_[0]->value_);
 	}
 	
 	void to_string(std::stringstream & ss) const override {

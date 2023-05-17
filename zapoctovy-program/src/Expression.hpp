@@ -11,19 +11,18 @@
 #include <iostream>
 #include "ExpressionNode.hpp"
 
-//TODO big 5 for Node amd Expression
 //TODO check const
-//TODO _impl funcs returrn bool that it changed something?
 
 template<typename T>
 class Expression {
 public:
 	Var<T> & create_variable(T value, const std::string & name);
-	auto operator[](const std::string x) -> Var<T> &;
+	auto operator[](std::string x) -> Var<T> &;
 	void differentiate();
-	std::string to_string();
+	[[nodiscard]] std::string to_string() const;
 	void factorize();
 	void simplify();
+	void normalize();
 	
 	std::map< std::string, Var<T>, std::less<>> variables;
 	std::unique_ptr<ExpressionNode<T>> root;
@@ -38,6 +37,12 @@ private:
 	
 	bool changed_graph = true;
 };
+
+template<typename T>
+void Expression<T>::normalize() {
+	this->factorize();
+	this->simplify();
+}
 
 template<typename T>
 std::unique_ptr<ExpressionNode<T>> Expression<T>::simplify_impl(ExpressionNode<T> *node) {
@@ -83,10 +88,6 @@ std::unique_ptr<ExpressionNode<T>> Expression<T>::simplify_impl(ExpressionNode<T
 			}
 		}
 		
-//		//something / 1 = something
-//		if (node->children_[1]->n_type_ == NodeType::Denominator && node->children_[1]->children_[0]->value_ == T(1)) {
-//			return std::move(node->children_[0]);
-//		}
 		//something / something
 		if (node->children_[1]->n_type_ == NodeType::Denominator) {
 			// something / const
@@ -292,7 +293,7 @@ void Expression<T>::factorize() {
 }
 
 template<typename T>
-Var<T> & Expression<T>::create_variable(T value, const std::string & name) {
+Var<T> & Expression<T>::create_variable(const T value, const std::string & name) {
 	variables.insert_or_assign(name, Var<T>(value, name));
 	return variables[name];
 }
@@ -314,18 +315,23 @@ void Expression<T>::differentiate() {
 	// TODO derivations change to zero !
 
 	root->eval();
-	root->deriv_ = T(1);
-
+	
+	root->deriv_ = T(0);
 	for (auto it = topo_order.rbegin(); it != topo_order.rend() ; ++it) {
-		std::stringstream ss;
-		(*it)->to_string(ss);
-		std::cout << ss.str() << std::endl;
+		(*it)->differentiate();
+	}
+	
+	root->deriv_ = T(1);
+	for (auto it = topo_order.rbegin(); it != topo_order.rend() ; ++it) {
+//		std::stringstream ss;
+//		(*it)->to_string(ss);
+//		std::cout << ss.str() << std::endl;
 		(*it)->differentiate();
 	}
 }
 
 template<typename T>
-void Expression<T>::build_topo(ExpressionNode<T> * node,
+void Expression<T>::build_topo(ExpressionNode<T> * const node,
 								std::set<ExpressionNode<T> *> &visited,
 								std::vector<ExpressionNode<T> *> &topo) {
 	if (!visited.contains(node)) {
@@ -338,7 +344,7 @@ void Expression<T>::build_topo(ExpressionNode<T> * node,
 }
 
 template<typename T>
-std::string Expression<T>::to_string() {
+std::string Expression<T>::to_string() const {
 	std::stringstream ss;
 	
 	root->to_string(ss);
