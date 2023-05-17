@@ -11,7 +11,7 @@
 #include <iostream>
 #include "ExpressionNode.hpp"
 
-//TODO zero_grad(),
+//TODO auto l = x+y; auto r = l * 10.0; l will be copied
 
 template<typename T>
 class Expression {
@@ -25,6 +25,8 @@ public:
 	void normalize();
 	T evaluate() const;
 	[[maybe_unused]] void zero_derivs();
+	void set_expr(std::unique_ptr<ExpressionNode<T>> && r);
+	std::unique_ptr<ExpressionNode<T>> && get_expr();
 	
 	std::map< std::string, Var<T>, std::less<>> variables;
 	std::unique_ptr<ExpressionNode<T>> root;
@@ -39,6 +41,16 @@ private:
 	
 	bool changed_graph = true;
 };
+
+template<typename T>
+std::unique_ptr<ExpressionNode<T>> &&Expression<T>::get_expr() {
+	return std::move(root);
+}
+
+template<typename T>
+void Expression<T>::set_expr(std::unique_ptr<ExpressionNode<T>> && r) {
+	root = std::move(r);
+}
 
 template<typename T>
 [[maybe_unused]] void Expression<T>::zero_derivs() {
