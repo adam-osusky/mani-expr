@@ -24,7 +24,6 @@ public:
 	void simplify();
 	void normalize();
 	T evaluate() const;
-	[[maybe_unused]] void zero_derivs();
 	void set_expr(std::unique_ptr<ExpressionNode<T>> && r);
 	std::unique_ptr<ExpressionNode<T>> && get_expr();
 	
@@ -38,6 +37,7 @@ private:
 	std::unique_ptr<ExpressionNode<T>> factorize_impl(ExpressionNode<T> * node);
 	std::unique_ptr<ExpressionNode<T>> simplify_impl(ExpressionNode<T> * node);
 	std::unique_ptr<ExpressionNode<T>> plus_or_minus(std::unique_ptr<ExpressionNode<T>> && l, std::unique_ptr<ExpressionNode<T>> && r, bool is_minus);
+	void zero_derivs();
 	
 	bool changed_graph = true;
 };
@@ -340,6 +340,7 @@ void Expression<T>::differentiate() {
 	
 	root->eval();
 	root->deriv_ = T(1);
+	zero_derivs();
 	
 	for (auto it = topo_order.rbegin(); it != topo_order.rend() ; ++it) {
 //		std::stringstream ss;
