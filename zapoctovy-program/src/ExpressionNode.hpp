@@ -189,6 +189,7 @@ template<typename T>
 std::unique_ptr<ExpressionNode<T>> convert_to_node(Var<T> & var) {
 	return std::make_unique<Number<T>>(var);
 }
+
 template<typename T>
 std::unique_ptr<ExpressionNode<T>> convert_to_node(T value) {
 	return std::make_unique< ConstantNode<T>>(value);
@@ -199,10 +200,10 @@ std::unique_ptr<ExpressionNode<T>> convert_to_node(std::unique_ptr<ExpressionNod
 	return std::move(value);
 }
 
-template<typename T, typename V>
-concept is_convertible_to_node = requires(T t) {
-	{convert_to_node(t)} -> std::same_as<std::unique_ptr<ExpressionNode<V>>>;
-};
+//template<typename T, typename V>
+//concept is_convertible_to_node = requires(T t) {
+//	{convert_to_node(t)} -> std::same_as<std::unique_ptr<ExpressionNode<V>>>;
+//};
 
 template<typename T>
 concept not_primitive_impl = requires { typename std::remove_cvref_t<T>::is_var; } or

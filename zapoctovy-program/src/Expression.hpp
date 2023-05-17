@@ -11,7 +11,7 @@
 #include <iostream>
 #include "ExpressionNode.hpp"
 
-//TODO eval for expr, zero_grad(),
+//TODO zero_grad(),
 
 template<typename T>
 class Expression {
@@ -23,7 +23,8 @@ public:
 	void factorize();
 	void simplify();
 	void normalize();
-	T evaluate();
+	T evaluate() const;
+	[[maybe_unused]] void zero_derivs();
 	
 	std::map< std::string, Var<T>, std::less<>> variables;
 	std::unique_ptr<ExpressionNode<T>> root;
@@ -40,7 +41,14 @@ private:
 };
 
 template<typename T>
-T Expression<T>::evaluate() {
+[[maybe_unused]] void Expression<T>::zero_derivs() {
+	for (auto && [name, var] : variables) {
+		var.derivative = 0;
+	}
+}
+
+template<typename T>
+T Expression<T>::evaluate() const {
 	return root->eval();
 }
 
@@ -318,16 +326,9 @@ void Expression<T>::differentiate() {
 		changed_graph = false;
 	}
 	
-	// TODO derivations change to zero !
-
 	root->eval();
-	
-	root->deriv_ = T(0);
-	for (auto it = topo_order.rbegin(); it != topo_order.rend() ; ++it) {
-		(*it)->differentiate();
-	}
-	
 	root->deriv_ = T(1);
+	
 	for (auto it = topo_order.rbegin(); it != topo_order.rend() ; ++it) {
 //		std::stringstream ss;
 //		(*it)->to_string(ss);
