@@ -11,7 +11,7 @@
 #include <iostream>
 #include "ExpressionNode.hpp"
 
-//TODO check const
+//TODO eval for expr, zero_grad(),
 
 template<typename T>
 class Expression {
@@ -23,6 +23,7 @@ public:
 	void factorize();
 	void simplify();
 	void normalize();
+	T evaluate();
 	
 	std::map< std::string, Var<T>, std::less<>> variables;
 	std::unique_ptr<ExpressionNode<T>> root;
@@ -37,6 +38,11 @@ private:
 	
 	bool changed_graph = true;
 };
+
+template<typename T>
+T Expression<T>::evaluate() {
+	return root->eval();
+}
 
 template<typename T>
 void Expression<T>::normalize() {
