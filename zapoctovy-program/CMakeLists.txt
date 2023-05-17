@@ -9,3 +9,4 @@ add_executable(zapoctovy_program main.cpp src/ExpressionNode.hpp src/Expression.
 add_executable(creation_eval_test tests/creation_eval_test.cpp src/ExpressionNode.hpp src/Expression.hpp)
 add_executable(differentiation_test tests/differentiation_test.cpp src/ExpressionNode.hpp src/Expression.hpp)
 add_executable(simplify_test tests/simplify_test.cpp src/ExpressionNode.hpp src/Expression.hpp)
+add_executable(complex_test tests/complex_test.cpp src/ExpressionNode.hpp src/Expression.hpp)

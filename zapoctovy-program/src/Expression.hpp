@@ -44,11 +44,13 @@ private:
 
 template<typename T>
 std::unique_ptr<ExpressionNode<T>> &&Expression<T>::get_expr() {
+	if (!root) throw std::runtime_error("Trying to get uninitialized expression");
 	return std::move(root);
 }
 
 template<typename T>
 void Expression<T>::set_expr(std::unique_ptr<ExpressionNode<T>> && r) {
+	changed_graph = true;
 	root = std::move(r);
 }
 
@@ -61,11 +63,15 @@ template<typename T>
 
 template<typename T>
 T Expression<T>::evaluate() const {
+	if (!root) return 0;
+	
 	return root->eval();
 }
 
 template<typename T>
 void Expression<T>::normalize() {
+	if (!root) return;
+	
 	bool factorized = true;
 	bool simplified = true;
 	while (factorized or simplified) {
@@ -160,13 +166,15 @@ std::unique_ptr<ExpressionNode<T>> Expression<T>::simplify_impl(ExpressionNode<T
 
 template<typename T>
 bool Expression<T>::simplify() {
+	if (!root) return false;
+	
 	bool has_changed = false;
 	auto new_r = simplify_impl(root.get(), has_changed);
 //	std::cout << "expr.simplify() = " << new_r << std::endl;
 	if (new_r) {
 		root = std::move(new_r);
 	}
-	changed_graph = has_changed;
+	changed_graph = changed_graph or has_changed;
 	return has_changed;
 }
 
@@ -319,13 +327,15 @@ std::unique_ptr<ExpressionNode<T>>  Expression<T>::factorize_impl(ExpressionNode
 
 template<typename T>
 bool Expression<T>::factorize() {
+	if (!root) return false;
+	
 	bool has_changed = false;
 	auto new_r = factorize_impl(root.get(), has_changed);
 //	std::cout << "expr.factorize() = " << new_r << std::endl;
 	if (new_r) {
 		root = std::move(new_r);
 	}
-	changed_graph = has_changed;
+	changed_graph = changed_graph or has_changed;
 	return has_changed;
 }
 
@@ -342,6 +352,8 @@ auto Expression<T>::operator[](const std::string x) -> Var<T> & {
 
 template<typename T>
 void Expression<T>::differentiate() {
+	if (!root) return;
+	
 	if (topo_order.empty() or changed_graph){
 		std::set< ExpressionNode<T>*> visited;
 		topo_order.clear();
