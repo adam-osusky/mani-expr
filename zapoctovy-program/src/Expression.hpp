@@ -20,8 +20,8 @@ public:
 	auto operator[](std::string x) -> Var<T> &;
 	void differentiate();
 	[[nodiscard]] std::string to_string() const;
-	void factorize();
-	void simplify();
+	bool factorize();
+	bool simplify();
 	void normalize();
 	T evaluate() const;
 	void set_expr(std::unique_ptr<ExpressionNode<T>> && r);
@@ -34,8 +34,8 @@ private:
 					std::set<ExpressionNode<T> *> &visited,
 					std::vector<ExpressionNode<T> *> &topo);
 	std::vector<ExpressionNode<T> *> topo_order;
-	std::unique_ptr<ExpressionNode<T>> factorize_impl(ExpressionNode<T> * node);
-	std::unique_ptr<ExpressionNode<T>> simplify_impl(ExpressionNode<T> * node);
+	std::unique_ptr<ExpressionNode<T>> factorize_impl(ExpressionNode<T> * node, bool & change);
+	std::unique_ptr<ExpressionNode<T>> simplify_impl(ExpressionNode<T> * node, bool & change);
 	std::unique_ptr<ExpressionNode<T>> plus_or_minus(std::unique_ptr<ExpressionNode<T>> && l, std::unique_ptr<ExpressionNode<T>> && r, bool is_minus);
 	void zero_derivs();
 	
@@ -66,15 +66,20 @@ T Expression<T>::evaluate() const {
 
 template<typename T>
 void Expression<T>::normalize() {
-	this->factorize();
-	this->simplify();
+	bool factorized = true;
+	bool simplified = true;
+	while (factorized or simplified) {
+		factorized = this->factorize();
+		simplified = this->simplify();
+	}
 }
 
 template<typename T>
-std::unique_ptr<ExpressionNode<T>> Expression<T>::simplify_impl(ExpressionNode<T> *node) {
+std::unique_ptr<ExpressionNode<T>> Expression<T>::simplify_impl(ExpressionNode<T> *node, bool & change) {
 	for (std::size_t i = 0; i < node->children_.size(); i++) {
-		auto new_child = simplify_impl(node->children_[i].get());
+		auto new_child = simplify_impl(node->children_[i].get(), change);
 		if (new_child) {
+			change = true;
 			node->children_[i] = std::move(new_child);
 		}
 	}
@@ -139,8 +144,9 @@ std::unique_ptr<ExpressionNode<T>> Expression<T>::simplify_impl(ExpressionNode<T
 		if (node->children_[1]->n_type_ == NodeType::Const && node->children_[1]->value_ == T(0)) {
 			return std::move(node->children_[0]);
 		}
-		// 0 +- a = a
+		// 0 +- a = +-a
 		if (node->children_[0]->n_type_ == NodeType::Const && node->children_[0]->value_ == T(0)) {
+			if (sub == T(-1)) return sub * std::move(node->children_[1]);
 			return std::move(node->children_[1]);
 		}
 		//const +- const
@@ -153,13 +159,15 @@ std::unique_ptr<ExpressionNode<T>> Expression<T>::simplify_impl(ExpressionNode<T
 }
 
 template<typename T>
-void Expression<T>::simplify() {
-	auto new_r = simplify_impl(root.get());
-	std::cout << "expr.simplify() = " << new_r << std::endl;
+bool Expression<T>::simplify() {
+	bool has_changed = false;
+	auto new_r = simplify_impl(root.get(), has_changed);
+//	std::cout << "expr.simplify() = " << new_r << std::endl;
 	if (new_r) {
 		root = std::move(new_r);
 	}
-	changed_graph = true;
+	changed_graph = has_changed;
+	return has_changed;
 }
 
 template<typename T>
@@ -173,10 +181,11 @@ Expression<T>::plus_or_minus(std::unique_ptr<ExpressionNode<T>> && l, std::uniqu
 }
 
 template<typename T>
-std::unique_ptr<ExpressionNode<T>>  Expression<T>::factorize_impl(ExpressionNode<T> *node) {
+std::unique_ptr<ExpressionNode<T>>  Expression<T>::factorize_impl(ExpressionNode<T> *node, bool & change) {
 	for (std::size_t i = 0; i < node->children_.size(); i++) {
-		auto new_child = factorize_impl(node->children_[i].get());
+		auto new_child = factorize_impl(node->children_[i].get(), change);
 		if (new_child) {
+			change = true;
 			node->children_[i] = std::move(new_child);
 //			std::cout << this->to_string() << std::endl;
 		}
@@ -309,13 +318,15 @@ std::unique_ptr<ExpressionNode<T>>  Expression<T>::factorize_impl(ExpressionNode
 }
 
 template<typename T>
-void Expression<T>::factorize() {
-	auto new_r = factorize_impl(root.get());
-	std::cout << "expr.factorize() = " << new_r << std::endl;
+bool Expression<T>::factorize() {
+	bool has_changed = false;
+	auto new_r = factorize_impl(root.get(), has_changed);
+//	std::cout << "expr.factorize() = " << new_r << std::endl;
 	if (new_r) {
 		root = std::move(new_r);
 	}
-	changed_graph = true;
+	changed_graph = has_changed;
+	return has_changed;
 }
 
 template<typename T>
