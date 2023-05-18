@@ -11,8 +11,6 @@
 #include <iostream>
 #include "ExpressionNode.hpp"
 
-//TODO auto l = x+y; auto r = l * 10.0; l will be copied
-
 template<typename T>
 class Expression {
 public:
