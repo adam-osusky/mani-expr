@@ -1,8 +1,10 @@
 #include <iostream>
+#include <limits>
 #include "src/Expression.hpp"
 
-void optimization() {
-	using T = double;
+int main() {
+	// example of gradient optimization
+	using T = long double;
 	
 	auto expr = Expression<T>();
 	auto & x = expr.create_variable(4.0, "x");
@@ -19,22 +21,5 @@ void optimization() {
 	std::cout << "x : " << x.value << std::endl;
 	std::cout << "y : " << y.value << std::endl;
 	std::cout << std::endl;
-}
-
-void o() {
-	using T = double;
-	
-	auto expr = Expression<T>();
-	auto & a = expr.create_variable(1.0, "a");
-	auto & b = expr.create_variable(2.0, "b");
-	auto & c = expr.create_variable(3.0, "c");
-	auto & d = expr.create_variable(4.0, "d");
-	auto & e = expr.create_variable(5.0, "e");
-	
-	
-}
-
-int main() {
-	optimization();
 	return 0;
 }

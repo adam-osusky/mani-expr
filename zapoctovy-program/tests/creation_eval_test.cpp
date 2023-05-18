@@ -15,8 +15,8 @@ void test_01() {
 	using T = double;
 	
 	Expression<T> expr;
-	Var<T>& x = expr.create_variable(2.0, "x");
-	Var<T>& y = expr.create_variable(3.0, "y");
+	auto & x = expr.create_variable(2.0, "x");
+	auto & y = expr.create_variable(3.0, "y");
 	
 	auto z = x + y;
 	expr.set_expr(std::move(z));
@@ -37,9 +37,9 @@ void test_02() {
 	using T = double;
 	
 	Expression<T> expr;
-	Var<T>& x = expr.create_variable(2.0, "x");
-	Var<T>& y = expr.create_variable(3.0, "y");
-	Var<T>& z = expr.create_variable(4.0, "z");
+	auto & x = expr.create_variable(2.0, "x");
+	auto & y = expr.create_variable(3.0, "y");
+	auto & z = expr.create_variable(4.0, "z");
 	
 	auto r = (x + 10.0) / (z - y) * x + 2.5;
 	expr.set_expr(std::move(r));
@@ -56,9 +56,9 @@ void test_03() {
 	using T = long double;
 	
 	Expression<T> expr;
-	Var<T>& x = expr.create_variable(4.519, "x");
-	Var<T>& y = expr.create_variable(-3.141941, "y");
-	Var<T>& z = expr.create_variable(-0.69, "z");
+	auto & x = expr.create_variable(4.519, "x");
+	auto & y = expr.create_variable(-3.141941, "y");
+	auto & z = expr.create_variable(-0.69, "z");
 	
 	auto r = (x + z) / (z - y) * x - z*x*y / (x / z);
 	expr.set_expr(std::move(r));
